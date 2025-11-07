@@ -1,0 +1,233 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: dev
+  config:
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:8071/}
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    gateway:
+      routes:
+        - id: api-documentation
+          uri: lb://bff
+          predicates:
+            - Path=/api-docs/**,/v3/api-docs/**
+            - Method=GET,POST,PUT,DELETE,PATCH
+
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/products/**,/api/products,/api/categories/**,/api/categories
+            - Method=GET,POST,PUT,DELETE,PATCH
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: productService
+                fallbackUri: "forward:/products/contact-support"
+
+        - id: support-service
+          uri: lb://support-service
+          predicates:
+            - Path=/api/carts/**,/api/carts,/api/files/**,/api/files,/api/reviews/**,/api/reviews,/api/users/**,/api/addresses/**,/api/users,/api/addresses
+            - Method=GET,POST,PUT,DELETE,PATCH
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: cartService
+                fallbackUri: "forward:/support/contact-support"
+
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**,/api/orders
+            - Method=GET,POST,PUT,DELETE,PATCH
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: orderService
+                fallbackUri: "forward:/orders/contact-support"
+
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**,/api/payments,/api/payment-methods/**,/api/payment-methods
+            - Method=GET,POST,PUT,DELETE,PATCH
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: paymentService
+                fallbackUri: "forward:/payments/contact-support"
+
+        - id: promotion-service
+          uri: lb://promotion-service
+          predicates:
+            - Path=/api/promotions/**,/api/promotions
+            - Method=GET,POST,PUT,DELETE,PATCH
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: promotionService
+                fallbackUri: "forward:/promotions/contact-support"
+
+        - id: notify-service
+          uri: lb://notify-service
+          predicates:
+            - Path=/api/templates/**,/api/templates,/api/send-logs,/api/send-logs/**
+            - Method=GET,POST,PUT,DELETE,PATCH
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: promotionService
+                fallbackUri: "forward:/notify/contact-support"
+
+      httpclient:
+        connect-timeout: 10000
+        response-timeout: 20s
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI:http://localhost:9090/realms/e-commerce/protocol/openid-connect/certs}
+
+management:
+  metrics:
+    distribution:
+      percentiles-histogram:
+        resilience4j:
+          circuitbreaker:
+            enabled: true
+        http:
+          server:
+          requests:
+            enabled: true
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+    loggers:
+      access: unrestricted
+    beans:
+      cache:
+        time-to-live: 10s
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    # Liveness and Readiness probes configuration.
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+      preferIpAddress: true
+    register-with-eureka: true
+    fetch-registry: true
+
+
+
+# Resilience configuration
+resilience4j:
+  timelimiter:
+    instances:
+      productService:
+        timeoutDuration: 15s
+      cartService:
+        timeoutDuration: 15s
+      orderService:
+        timeoutDuration: 15s
+      paymentService:
+        timeoutDuration: 15s
+      promotionService:
+        timeoutDuration: 15s
+      fileService:
+        timeoutDuration: 15s
+      userService:
+        timeoutDuration: 15s
+      review-service:
+        timeoutDuration: 15s
+
+  circuitbreaker:
+    instances:
+      productService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+      cartService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+      orderService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+      paymentService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+      promotionService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+      fileService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+      userService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+      reviewService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimum-number-of-calls: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10000
+        failureRateThreshold: 70
+
+grpc:
+  client:
+    product-service:
+      negotiation-type: plaintext

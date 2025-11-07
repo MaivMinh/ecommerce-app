@@ -1,0 +1,272 @@
+services:
+
+  axon-server:
+    image: axoniq/axonserver
+    ports:
+      - "8024:8024"
+      - "8124:8124"
+    networks:
+      - e-commerce
+    volumes:
+      - "/root/data/axonserver/data:/axonserver/data"
+      - "/root/data/axonserver/events:/axonserver/events"
+      - "/root/data/axonserver/config:/axonserver/config"
+    restart: unless-stopped
+
+  service-discovery:
+    image: service-discovery:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_APPLICATION_NAME=service-discovery
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+    ports:
+      - "8761:8761"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+
+  api-gateway:
+    image: api-gateway:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_APPLICATION_NAME=api-gateway
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATA_REDIS_HOST=redis-service
+      - SPRING_DATA_REDIS_PORT=6379
+      - GRPC_SERVER_AUTH_SERVICE_ADDRESS=static://auth-service:9093
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+  # =======================
+  # Order Service
+  # =======================
+  order-service:
+    image: order-service:1.0
+    networks:
+      - e-commerce
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    restart: on-failure
+    ports:
+      - "9094:9094"
+      - "8084:8084"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_APPLICATION_NAME=order-service
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq-service
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_order
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - GRPC_SERVER_USER_SERVICE_ADDRESS=static://user-service:9098
+      - GRPC_SERVER_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+  # =======================
+  # Payment Service
+  # =======================
+  payment-service:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: payment-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_APPLICATION_NAME=payment-service
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_payment
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+
+
+
+  # =======================
+  # Product Service
+  # =======================
+
+  product-service:
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    image: product-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    environment:
+      - SPRING_APPLICATION_NAME=product-service
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_product
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+
+
+  # =======================
+  # Promotion Service
+  # =======================
+  promotion-service:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: promotion-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_APPLICATION_NAME=promotion-service
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_promotion
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+
+  # =======================
+  # User Service
+  # =======================
+  user-service:
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    image: user-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8088:8088"
+      - "9098:9098"
+    environment:
+      - SPRING_APPLICATION_NAME=user-service
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_user
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+
+  # =======================
+  # File Service
+  # =======================
+  file-service:
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    image: file-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_APPLICATION_NAME=file-service
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+
+  # =======================
+  # Review Service
+  # =======================
+  review-service:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: review-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_APPLICATION_NAME=review-service
+      - SPRING_PROFILES_ACTIVE=default
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8071/
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_review
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS=kafka:9092
+
+
+networks:
+  e-commerce:
+    driver: "bridge"
+
+# =======================
+# Docker Volumes
+# =======================d
+volumes:
+  db-service:
+    driver: local
+  kafka_data:
+    driver: local

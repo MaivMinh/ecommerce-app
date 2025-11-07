@@ -1,0 +1,45 @@
+server:
+  port: 8761
+
+spring:
+  profiles:
+    active: default
+  application:
+    name: service-discovery
+  threads:
+    virtual:
+      enabled: true
+  config:
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:8071/}
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    # Liveness and Readiness probes configuration.
+    liveness-state:
+      enabled: true
+    readiness-state:
+      enabled: true
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    fetch-registry: false
+    register-with-eureka: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    peer-node-read-timeout-ms: 2000
+    peer-node-connect-timeout-ms: 2000
+    eviction-interval-timer-in-ms: 60000
+    renewal-percent-threshold: 0.85
+    renewal-threshold-update-interval-ms: 900000
+    enable-self-preservation: true

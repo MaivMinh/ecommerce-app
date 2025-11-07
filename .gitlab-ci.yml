@@ -1,0 +1,80 @@
+stages:
+  - build
+  - deploy
+
+build:
+  image: docker:24
+  services:
+    - docker:dind
+  stage: build
+  only:
+    - tags
+  before_script:
+    - docker version
+    - docker login -u $REGISTRY_USER -p $REGISTRY_PASSWORD
+    - apt-get update -y && apt-get install -y maven default-jdk
+    - mvn -v
+    - mvn clean compile package
+
+  script:
+    - docker build -t ${REMOTE_REGISTRY}/service-discovery:1.0  ./app/service-discovery
+    - docker push ${REMOTE_REGISTRY}/service-discovery:1.0
+    - docker build -t ${REMOTE_REGISTRY}/api-gateway:1.0  ./app/api-gateway
+    - docker push ${REMOTE_REGISTRY}/api-gateway:1.0
+    - docker build -t ${REMOTE_REGISTRY}/order-service:1.0  ./app/order-service
+    - docker push ${REMOTE_REGISTRY}/order-service:1.0
+    - docker build -t ${REMOTE_REGISTRY}/payment-service:1.0  ./app/payment-service
+    - docker push ${REMOTE_REGISTRY}/payment-service:1.0
+    - docker build -t ${REMOTE_REGISTRY}/product-service:1.0  ./app/product-service
+    - docker push ${REMOTE_REGISTRY}/product-service:1.0
+    - docker build -t ${REMOTE_REGISTRY}/promotion-service:1.0  ./app/promotion-service
+    - docker push ${REMOTE_REGISTRY}/promotion-service:1.0
+    - docker build -t ${REMOTE_REGISTRY}/support-service:1.0  ./app/support-service
+    - docker push ${REMOTE_REGISTRY}/support-service:1.0
+
+
+deploy:
+  image: ubuntu:22.04
+  stage: deploy
+  only:
+    - tags
+  before_script:
+    - apt-get update -y
+    - apt-get install -y sshpass openssh-client
+    - echo $SSH_SERVER_IP
+    - echo root@$SSH_SERVER_IP -p $SSH_PORT
+  script:
+    - mkdir -p ~/.ssh && touch ~/.ssh/known_hosts
+    - ssh-keyscan -p $SSH_PORT $SSH_SERVER_IP >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - >
+      sshpass -p "$SSH_SERVER_PWD" ssh -o StrictHostKeyChecking=no -p $SSH_PORT root@$SSH_SERVER_IP
+      "docker login ${REMOTE_REGISTRY} -u $REGISTRY_USER -p $REGISTRY_PASSWORD;
+      docker pull ${REMOTE_REGISTRY}/service-discovery:1.0;
+      docker pull ${REMOTE_REGISTRY}/api-gateway:1.0;
+      docker pull ${REMOTE_REGISTRY}/order-service:1.0;
+      docker pull ${REMOTE_REGISTRY}/payment-service:1.0;
+      docker pull ${REMOTE_REGISTRY}/product-service:1.0;
+      docker pull ${REMOTE_REGISTRY}/promotion-service:1.0;
+      docker pull ${REMOTE_REGISTRY}/support-service:1.0;
+      docker stop service-discovery || true;
+      docker rm service-discovery || true;
+      docker stop api-gateway || true;
+      docker rm api-gateway || true;
+      docker stop order-service || true;
+      docker rm order-service || true;
+      docker stop payment-service || true;
+      docker rm payment-service || true;
+      docker stop product-service || true;
+      docker rm product-service || true;
+      docker stop promotion-service || true;
+      docker rm promotion-service || true;
+      docker stop support-service || true;
+      docker rm support-service || true;
+      docker run -d -p 8761:8761 --name service-discovery ${REMOTE_REGISTRY}/service-discovery:1.0;
+      docker run -d -p 8080:8080 --name api-gateway ${REMOTE_REGISTRY}/api-gateway:1.0;
+      docker run -d -p 8084:8084 --name order-service ${REMOTE_REGISTRY}/order-service:1.0;
+      docker run -d -p 8085:8085 --name payment-service ${REMOTE_REGISTRY}/payment-service:1.0;
+      docker run -d -p 8081:8081 --name product-service ${REMOTE_REGISTRY}/product-service:1.0;
+      docker run -d -p 8083:8083 --name promotion-service ${REMOTE_REGISTRY}/promotion-service:1.0;
+      docker run -d -p 8082:8082 --name support-service ${REMOTE_REGISTRY}/support-service:1.0;"

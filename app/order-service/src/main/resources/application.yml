@@ -1,0 +1,130 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: order-service
+  threads:
+    virtual:
+      enabled: true
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  # Kafka Configuration
+  cloud:
+    stream:
+      bindings: #  Destination bindings component là cầu nối và định nghĩa các kênh (channels) mà ứng dụng sẽ sử dụng để gửi hoặc nhận dữ liệu.
+        springCloudBusInput:
+          destination: springCloudBus
+        publishOrderCreated-out-0:
+          destination: order-created
+        publishNotifyOrderConfirmed-out-0:
+          destination: notify-order-confirmed
+      kafka:
+        binder:
+          brokers:
+            - ${KAFKA_BROKER:localhost:9092}
+
+
+
+
+  # /// MYSQL DATABASE CONFIGURATION ///
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_order}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:49@Da5J,[KsemDN}
+
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        resilience4j:
+          circuitbreaker:
+            enabled: true
+        http:
+          server:
+            requests:
+              enabled: true
+
+#Eureka client config.
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+      preferIpAddress: true
+    register-with-eureka: true
+    fetch-registry: true
+
+#Axon configuration
+axon:
+  axonserver:
+    servers: ${AXON_AXONSERVER_SERVERS:localhost:8124}
+    enabled: true
+  eventhandling:
+    processors:
+      order-group:
+        mode: subscribing
+      product-group:
+        mode: subscribing
+
+
+resilience4j:
+  timelimiter:
+    instances:
+      support-service:
+        timeout-duration: 10s
+        cancel-running-future: true
+      product-service:
+        timeout-duration: 10s
+        cancel-running-future: true
+      payment-service:
+        timeout-duration: 10s
+        cancel-running-future: true
+  circuitbreaker:
+    instances:
+      support-service:
+        register-health-indicator: true
+        sliding-window-size: 30
+        minimum-number-of-calls: 30
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20000
+        permitted-number-of-calls-in-half-open-state: 15
+        sliding-window-type: COUNT_BASED
+      product-service:
+        register-health-indicator: true
+        sliding-window-size: 30
+        minimum-number-of-calls: 30
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20000
+        permitted-number-of-calls-in-half-open-state: 15
+        sliding-window-type: COUNT_BASED
+      payment-service:
+        register-health-indicator: true
+        sliding-window-size: 30
+        minimum-number-of-calls: 30
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20000
+        permitted-number-of-calls-in-half-open-state: 15
+        sliding-window-type: COUNT_BASED

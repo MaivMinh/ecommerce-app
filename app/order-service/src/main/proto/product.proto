@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package product;
+option java_multiple_files = true;
+option java_package = "product_service";
+option java_outer_classname = "ProductProto";
+
+service ProductService {
+  rpc FindProductVariantById(FindProductVariantByIdRequest) returns (FindProductVariantByIdResponse);
+  rpc FindProductVariantsByIds(FindProductVariantsByIdsRequest) returns (FindProductVariantsByIdsResponse);
+
+  rpc FindProductVariantByListId(FindProductVariantByListProductVariantIdRequest) returns (FindProductVariantByListProductVariantIdResponse);
+  rpc FindProductInfoByProductVariantId(FindProductInfoByProductVariantIdRequest) returns (FindProductInfoByProductVariantIdResponse);
+}
+
+message FindProductInfoByProductVariantIdRequest {
+  repeated string productVariantId = 1;
+}
+message ProductInfo {
+  string productId = 1;
+  string productVariantId = 2;
+  string productName = 3;
+  string cover = 4;
+  string colorName = 5;
+  string size = 6;
+}
+message FindProductInfoByProductVariantIdResponse {
+  int32 status = 1;
+  string message = 2;
+  repeated ProductInfo products = 3;
+}
+
+
+message OrderItemAndProductVariantId {
+  string orderItemId = 1;
+  string productVariantId = 2;
+}
+message FindProductVariantByListProductVariantIdRequest {
+  repeated OrderItemAndProductVariantId ids = 1;
+}
+message FindProductVariantByListProductVariantIdResponse {
+  int32 status = 1;
+  string message = 2;
+  repeated ProductVariantRes productVariants = 3;
+}
+
+message ProductVariantRes {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string size = 4;
+  string colorName = 5;
+  string colorHex = 6;
+  string cover = 7;
+  double price = 8;
+  double originalPrice = 9;
+  string orderItemId = 10;
+}
+
+message ProductVariant {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string size = 4;
+  string colorName = 5;
+  string colorHex = 6;
+  string cover = 7;
+  double price = 8;
+  double originalPrice = 9;
+  string cartItemId = 10;
+  string productId = 11;
+}
+message FindProductVariantByIdRequest {
+  string id = 1;
+}
+message FindProductVariantByIdResponse {
+  int32 status = 1;
+  string message = 2;
+  ProductVariant productVariant = 3;
+}
+
+message CartItemField {
+  string cartItemId = 1;
+  string productVariantId = 2;
+}
+message FindProductVariantsByIdsRequest {
+  repeated CartItemField cartItemField = 1;
+}
+message FindProductVariantsByIdsResponse {
+  int32 status = 1;
+  string message = 2;
+  repeated ProductVariant productVariant = 3;
+}

@@ -1,0 +1,76 @@
+server:
+  port: 8083
+spring:
+  application:
+    name: promotion-service
+  threads:
+    virtual:
+      enabled: true
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  # /// MYSQL DATABASE CONFIGURATION ///
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_promotion}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:49@Da5J,[KsemDN}
+
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        resilience4j:
+          circuitbreaker:
+            enabled: true
+        http:
+          server:
+            requests:
+              enabled: true
+
+#Eureka client config.
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+      preferIpAddress: true
+    register-with-eureka: true
+    fetch-registry: true
+
+#Axon configuration
+axon:
+  eventhandling:
+    processors:
+      promotion-group:
+        mode: subscribing
+  axonserver:
+    servers: localhost:8124
+    enabled: true
+
+logging:
+  level:
+    org:
+      axonframework: DEBUG

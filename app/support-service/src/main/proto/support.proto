@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package net.devh.boot.grpc.example;
+option java_multiple_files = true;
+option java_outer_classname = "SupportProto";
+option java_package = "support_service";
+
+service SupportService {
+  rpc GetShippingAddress (GetShippingAddressRequest) returns (GetShippingAddressResponse);
+  rpc GetUserInfo (GetUserInfoRequest) returns (GetUserInfoResponse);
+}
+
+message GetUserInfoRequest {
+  string username = 1;
+}
+message GetUserInfoResponse {
+  int32 status = 1;
+  string message = 2;
+  string id = 3;
+  string name = 4;
+  string emails = 5;
+}
+
+message GetShippingAddressRequest {
+  string shippingAddressId = 1;
+}
+message GetShippingAddressResponse {
+  int32 status = 1;
+  string message = 2;
+  string id = 3;
+  string fullName = 4;
+  string phone = 5;
+  string address = 6;
+}
+

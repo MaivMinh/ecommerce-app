@@ -1,0 +1,87 @@
+server:
+  port: 8081
+grpc:
+  server:
+    port: 9091
+
+spring:
+  application:
+    name: product-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  threads:
+    virtual:
+      enabled: true
+
+  sql:
+    init:
+      schema-locations: classpath:schema.sql
+      mode: ${SPRING_SQL_INIT_MODE:never}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_product}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:49@Da5J,[KsemDN}
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+
+
+
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        resilience4j:
+          circuitbreaker:
+            enabled: true
+        http:
+          server:
+            requests:
+              enabled: true
+
+#Eureka client config.
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+      preferIpAddress: true
+    register-with-eureka: true
+    fetch-registry: true
+
+
+axon:
+  axonserver:
+    servers: ${AXON_AXONSERVER_SERVERS:localhost:8124}
+    enabled: true
+  eventhandling:
+    processors:
+      product-group:
+        mode: subscribing
+
+logging:
+  level:
+    net.devh.boot.grpc.server: DEBUG

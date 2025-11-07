@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package net.devh.boot.grpc.example;
+option java_multiple_files = true;
+option java_outer_classname = "PaymentProto";
+option java_package = "payment_service";
+
+service PaymentService {
+  rpc GetPaymentStatus(GetPaymentStatusRequest) returns (GetPaymentStatusResponse);
+}
+
+message GetPaymentStatusRequest {
+  string orderId = 1;
+}
+message GetPaymentStatusResponse {
+  int32 status = 1;
+  string message = 2;
+  string paymentStatus = 3;
+}
