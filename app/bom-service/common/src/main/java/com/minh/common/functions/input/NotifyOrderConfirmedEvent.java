@@ -9,9 +9,6 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class NotifyOrderConfirmedEvent {
-    private String templateCode;
-    private Map<String, String> recipient;
+public class NotifyOrderConfirmedEvent extends NotifyEvent {
     private NotifyOrderConfirmedParams params;
-    private Map<String, Object> metaData;
 }

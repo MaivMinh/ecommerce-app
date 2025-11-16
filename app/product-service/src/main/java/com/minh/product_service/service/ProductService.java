@@ -37,4 +37,6 @@ public interface ProductService {
     ResponseData findProductByProductVariantId(FindProductByProductVariantIdQuery query);
 
     FindProductInfoByProductVariantIdResponse findProductInfoByProductVariantId(FindProductInfoByProductVariantIdRequest request);
+
+    void handleProductUpdatedEvent(String slug);
 }

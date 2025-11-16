@@ -6,9 +6,11 @@ import com.minh.common.constants.AppConstants;
 import com.minh.common.events.OrderCreatedEvent;
 import com.minh.common.events.OrderCreatedRollbackedEvent;
 import com.minh.common.events.CreatedOrderConfirmedEvent;
-import com.minh.common.functions.input.NotifyOrderConfirmedEvent;
-import com.minh.common.functions.input.OrderCreatedEventInput;
+import com.minh.common.functions.input.*;
 import com.minh.order_service.command.commands.CreateOrderCommand;
+import com.minh.order_service.enums.NotifyTemplateCode;
+import com.minh.order_service.query.entity.OrderItem;
+import com.minh.order_service.service.OrderItemService;
 import lombok.extern.slf4j.Slf4j;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
@@ -21,12 +23,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Aggregate
-@Service
 public class OrderAggregate {
     @AggregateIdentifier
     private String orderId;
@@ -40,15 +42,9 @@ public class OrderAggregate {
     private String paymentMethodId;
     private String promotionId;
     private String errMsg;
-    private StreamBridge streamBridge;
     private String productId;
 
     public OrderAggregate() {
-    }
-
-    @Autowired
-    public void setStreamBridge(StreamBridge streamBridge) {
-        this.streamBridge = streamBridge;
     }
 
 

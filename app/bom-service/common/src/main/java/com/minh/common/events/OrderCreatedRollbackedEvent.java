@@ -7,5 +7,6 @@ import lombok.Setter;
 @Setter
 public class OrderCreatedRollbackedEvent {
     private String orderId;
+    private String username;
     private String errorMsg;
 }

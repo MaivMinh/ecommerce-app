@@ -5,12 +5,9 @@ import com.minh.common.constants.AppConstants;
 import com.minh.common.constants.ErrorCode;
 import com.minh.common.constants.ResponseMessages;
 import com.minh.common.events.CreatedOrderConfirmedEvent;
-import com.minh.common.functions.input.NotifyOrderConfirmedParams;
+import com.minh.common.functions.input.*;
 import com.minh.common.events.OrderCreatedEvent;
 import com.minh.common.events.OrderCreatedRollbackedEvent;
-import com.minh.common.functions.input.NotifyOrderConfirmedEvent;
-import com.minh.common.functions.input.OrderCreatedEventInput;
-import com.minh.common.functions.input.OrderedItem;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
@@ -99,8 +96,38 @@ public class OrderServiceImpl implements OrderService {
                 () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.NOT_FOUND, event.getOrderId()))
         );
         order.setStatus(OrderStatus.CANCELLED);
-
+        /// Lấy thông tin các item của đơn hàng trước khi chúng bị xóa.
+        List<OrderItem> orderItems = orderItemService.getAllByOrderId(event.getOrderId());
         orderItemService.removeAllByOrderId(order.getId());
+
+        /// Send a notification that order creation has been rolled back.
+        List<OrderedItem> items = new ArrayList<>();
+        for (OrderItem item : orderItems) {
+            items.add(OrderedItem.builder()
+                    .id(item.getId())
+                    .productVariantId(item.getProductVariantId())
+                    .quantity(item.getQuantity())
+                    .price(item.getPrice())
+                    .build());
+        }
+        NotifyOrderRolledBackEvent eventNotify = new NotifyOrderRolledBackEvent();
+        eventNotify.setTemplateCode(NotifyTemplateCode.ORDER_FAILED.name());
+        eventNotify.setRecipient(Map.of("username", event.getUsername()));
+        eventNotify.setParams(NotifyOrderRolledBackParams.builder()
+                .orderId(event.getOrderId())
+                .items(items)
+                .build());
+        eventNotify.setMetaData(Map.of(
+                "createdAt", System.currentTimeMillis(),
+                "redirectUrl", AppConstants.FRONTEND_URL + "/cart"
+        ));
+        var result = streamBridge.send("publishNotifyOrderRolledBack-out-0", eventNotify);
+
+        if (result) {
+            log.info("Gửi thông báo đặt hàng thất bại tới Email cho username: {}", event.getUsername());
+        } else {
+            log.warn("Có lỗi xảy ra khi gửi thông báo đặt hàng thất bại tới Email cho username: {}", event.getUsername());
+        }
     }
 
     @Override
@@ -134,28 +161,25 @@ public class OrderServiceImpl implements OrderService {
                     .build());
         }
 
-
-        /// Gửi event thông báo xác nhận đơn hàng.
-        result = streamBridge.send("publishNotifyOrderConfirmed-out-0", NotifyOrderConfirmedEvent.builder()
-                .templateCode(NotifyTemplateCode.ORDER_CONFIRMATION.name())
-                .recipient(Map.of("username", event.getUsername()))
-                .params(NotifyOrderConfirmedParams.builder()
-                        .orderId(event.getOrderId())
-                        .items(items)
-                        .build()
-                )
-                .metaData(Map.of(
-                        "createdAt", System.currentTimeMillis(),
-                        "redirectUrl", AppConstants.FRONTEND_URL + "/orders/"
-                ))
+        NotifyOrderConfirmedEvent notifyEvent = new NotifyOrderConfirmedEvent();
+        notifyEvent.setTemplateCode(NotifyTemplateCode.ORDER_CONFIRMATION.name());
+        notifyEvent.setRecipient(Map.of("username", event.getUsername()));
+        notifyEvent.setParams(NotifyOrderConfirmedParams.builder()
+                .orderId(event.getOrderId())
+                .items(items)
                 .build());
+        notifyEvent.setMetaData(Map.of(
+                "createdAt", System.currentTimeMillis(),
+                "redirectUrl", AppConstants.FRONTEND_URL + "/orders/"
+        ));
+        /// Gửi event thông báo xác nhận đơn hàng.
+        result = streamBridge.send("publishNotifyOrderConfirmed-out-0", notifyEvent);
 
         if (result) {
             log.info("Gửi thông báo xác nhận đơn hàng thành công tới Email cho username: {}", event.getUsername());
         } else {
             log.warn("Có lỗi xảy ra khi gửi thông báo xác nhận đơn hàng tới Email cho username: {}", event.getUsername());
         }
-
     }
 
     public ResponseData findOverallStatusOfCreatingOrder(FindOverallStatusOfCreatingOrderQuery query) {

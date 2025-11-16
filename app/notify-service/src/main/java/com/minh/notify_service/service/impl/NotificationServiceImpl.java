@@ -1,7 +1,9 @@
 package com.minh.notify_service.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minh.common.functions.input.NotifyEvent;
 import com.minh.common.functions.input.NotifyOrderConfirmedEvent;
+import com.minh.common.functions.input.NotifyOrderRolledBackEvent;
 import com.minh.common.functions.input.OrderedItem;
 import com.minh.common.utils.AppUtils;
 import com.minh.notify_service.dto.NotificationTemplateDto;
@@ -10,18 +12,15 @@ import com.minh.notify_service.enums.NotificationStatus;
 import com.minh.notify_service.grpc.client.ProductGrpcClient;
 import com.minh.notify_service.grpc.client.SupportGrpcClient;
 import com.minh.notify_service.repository.NotificationSendLogRepository;
+import com.minh.notify_service.service.EmailService;
 import com.minh.notify_service.service.NotificationService;
 import com.minh.notify_service.service.NotificationTemplateService;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import product_service.FindProductInfoByProductVariantIdRequest;
@@ -50,17 +49,15 @@ public class NotificationServiceImpl implements NotificationService {
     private final ObjectMapper objectMapper;
     private final SupportGrpcClient supportGrpcClient;
     private final ProductGrpcClient productGrpcClient;
+    private final EmailService emailService;
 
     @Override
     public void handleNotifyOrderConfirmed(NotifyOrderConfirmedEvent event) {
-
-        NotifyOrderConfirmedEvent data = preparedData(event);
+        NotifyEvent data = prepareDataOrder(event);
         if (Objects.isNull(data)) {
             log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderConfirmedEvent: {}", event);
             return;
         }
-
-        log.info("Xử lý sự kiện NotifyOrderConfirmedEvent: {}", event);
 
         if (!StringUtils.hasText(event.getTemplateCode())) {
             log.error("Template code bị trống trong sự kiện NotifyOrderConfirmedEvent: {}", event);
@@ -90,13 +87,13 @@ public class NotificationServiceImpl implements NotificationService {
                     .lastError(null)
                     .build();
             notificationSendLogRepository.save(nsl);
-            sendEmail(recipient.get("email"), title, content);
+            emailService.sendEmail(recipient.get("email"), title, content);
             nsl.setStatus(NotificationStatus.SENT);
             nsl.setSentAt(LocalDateTime.now());
         } catch (IOException | TemplateException e) {
             log.error("Lỗi khi kết xuất mẫu thông báo cho templateCode: {}", templateCode, e);
             return;
-        } catch (MessagingException e) {
+        } catch (RuntimeException e) {
             log.error("Lỗi khi gửi email cho recipients: {}", recipient.get("username"), e);
             nsl.setStatus(NotificationStatus.FAILED);
             nsl.setLastError(e.getMessage());
@@ -106,27 +103,24 @@ public class NotificationServiceImpl implements NotificationService {
 
     }
 
-    private NotifyOrderConfirmedEvent preparedData(NotifyOrderConfirmedEvent event) {
-        /// Lấy thông tin tên của người nhận.
+    private GetUserInfoResponse getUserInfo(String username) {
         try {
-            String username = event.getRecipient().get("username");
             if (!StringUtils.hasText(username)) {
-                throw new RuntimeException("Không tìm thấy username trong recipient.");
+                log.error("Username trống khi lấy thông tin user từ support-service.");
+                return null;
             }
-            /// Gọi gRPC tới support-service.
             GetUserInfoRequest userReq = GetUserInfoRequest.newBuilder()
                     .setUsername(username)
                     .build();
-            GetUserInfoResponse userRes = supportGrpcClient.getUserInfo(userReq);
-            log.info("Response từ support-service - getUserInfo: {}", userRes.getStatus());
-            if (userRes.getStatus() != 200) {
-                throw new RuntimeException("Lấy thông tin user thất bại: " + userRes.getMessage());
-            }
-            event.getRecipient().put("name", userRes.getName());
-            event.getRecipient().put("email", userRes.getEmails());
+            return supportGrpcClient.getUserInfo(userReq);
+        }   catch (Exception e) {
+            log.error("Lỗi khi gọi gRPC tới support-service để lấy thông tin user cho username: {}", username, e);
+            return null;
+        }
+    }
 
-            /// 2. Lấy thông tin danh sách sản phẩm trong đơn hàng. Lấy tên sản phẩm, hình ảnh. color name, size.
-            List<OrderedItem> items = event.getParams().getItems();
+    private List<OrderedItem> processOrderedItems(List<OrderedItem> items) {
+        try {
             List<String> productVariantIds = items.stream().map(OrderedItem::getProductVariantId).toList();
 
             /// Gọi tới product service để lấy thông tin.
@@ -137,7 +131,8 @@ public class NotificationServiceImpl implements NotificationService {
             FindProductInfoByProductVariantIdResponse prodRes = productGrpcClient.findProductInfoByProductVariantId(prodReq);
 
             if (prodRes.getProductsList().isEmpty()) {
-                throw new RuntimeException("Không tìm thấy thông tin sản phẩm cho các productVariantIds đã cho.");
+                log.error("Không tìm thấy thông tin sản phẩm cho các productVariantIds đã cho.");
+                return items;
             }
             Map<String, ProductInfo> productInfoMap = prodRes.getProductsList().stream()
                     .collect(Collectors.toMap(ProductInfo::getProductVariantId, p -> p));
@@ -152,15 +147,56 @@ public class NotificationServiceImpl implements NotificationService {
                     item.setSize(pInfo.getSize());
                 }
             }
+            return items;
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy thông tin sản phẩm từ product-service.", e);
+            return items;
+        }
+    }
 
-            event.getParams().setItems(items);
 
-            /// Tính lại tổng tiền đơn hàng.
-            double totalAmount = 0;
-            for (OrderedItem item : items) {
-                totalAmount += item.getPrice() * item.getQuantity();
+    private NotifyEvent prepareDataOrder(NotifyEvent event) {
+        /// Lấy thông tin tên của người nhận.
+        try {
+            GetUserInfoResponse userRes = this.getUserInfo(event.getRecipient().get("username"));
+            if (Objects.isNull(userRes)) {
+                throw new RuntimeException("Lấy thông tin user thất bại cho username: " + event.getRecipient().get("username"));
             }
-            event.getParams().setTotal(totalAmount);
+            event.getRecipient().put("name", userRes.getName());
+            event.getRecipient().put("email", userRes.getEmails());
+
+            if (event instanceof NotifyOrderConfirmedEvent
+                    || event instanceof NotifyOrderRolledBackEvent) {
+                List<OrderedItem> items;
+                if (event instanceof NotifyOrderConfirmedEvent) {
+                    items = ((NotifyOrderConfirmedEvent) event).getParams().getItems();
+                } else {
+                    items = ((NotifyOrderRolledBackEvent) event).getParams().getItems();
+                }
+                List<OrderedItem> processedItems = this.processOrderedItems(items);
+                if (event instanceof NotifyOrderConfirmedEvent) {
+                    ((NotifyOrderConfirmedEvent) event).getParams().setItems(processedItems);
+                } else {
+                    ((NotifyOrderRolledBackEvent) event).getParams().setItems(processedItems);
+                }
+            }
+
+            /// Tính lại tổng giá trị đơn hàng dựa trên các item đã được cập nhật thông tin.
+            double total = 0.0;
+            List<OrderedItem> items;
+            if (event instanceof NotifyOrderConfirmedEvent) {
+                items = ((NotifyOrderConfirmedEvent) event).getParams().getItems();
+                for (OrderedItem item : items) {
+                    total += item.getPrice() * item.getQuantity();
+                }
+                ((NotifyOrderConfirmedEvent) event).getParams().setTotal(total);
+            } else {
+                items = ((NotifyOrderRolledBackEvent) event).getParams().getItems();
+                for (OrderedItem item : items) {
+                    total += item.getPrice() * item.getQuantity();
+                }
+                ((NotifyOrderRolledBackEvent) event).getParams().setTotal(total);
+            }
             return event;
         } catch (Exception e) {
             e.printStackTrace();
@@ -168,20 +204,62 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    @Async
-    protected void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
-        MimeMessage msg = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(msg, true, "UTF-8");
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(htmlContent, true);
-        mailSender.send(msg);
-    }
 
-    private String renderTemplateFromString(String templateContent, NotifyOrderConfirmedEvent model) throws IOException, TemplateException {
+    private <T extends NotifyEvent> String renderTemplateFromString(String templateContent, T model) throws IOException, TemplateException {
         Template t = new Template("name", new StringReader(templateContent), freemarkerCfg);
         StringWriter out = new StringWriter();
         t.process(model, out);
         return out.toString();
+    }
+
+    @Override
+    public void handleNotifyOrderRolledBack(NotifyOrderRolledBackEvent event) {
+        log.info("Xử lý sự kiện NotifyOrderRolledBackEvent: {}", event);
+        if (!StringUtils.hasText(event.getTemplateCode())) {
+            log.error("Template code bị trống trong sự kiện NotifyOrderConfirmedEvent: {}", event);
+            return;
+        }
+        NotifyEvent data = prepareDataOrder(event);
+        if (Objects.isNull(data)) {
+            log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderConfirmedEvent: {}", event);
+            return;
+        }
+        String templateCode = event.getTemplateCode();
+        NotificationTemplateDto dto = notificationTemplateService.findNotificationTemplateByTemplateCodeAndIsActive(templateCode, true);
+        if (Objects.isNull(dto)) {
+            log.error("Không tìm thấy mẫu thông báo với mã templateCode: {}", templateCode);
+            return;
+        }
+        Map<String, String> recipient = event.getRecipient();
+
+        NotificationSendLog nsl = null;
+        try {
+            String title = renderTemplateFromString(dto.getTitle(), data);
+            String content = renderTemplateFromString(dto.getContent(), data);
+            nsl = NotificationSendLog.builder()
+                    .id(AppUtils.generateUUIDv7())
+                    .templateCode(event.getTemplateCode())
+                    .params(objectMapper.writeValueAsString(event.getParams()))
+                    .recipient(recipient.get("username"))
+                    .renderedTitle(title)
+                    .renderedContent(content)
+                    .status(NotificationStatus.PENDING)
+                    .attempts(1)
+                    .lastError(null)
+                    .build();
+            notificationSendLogRepository.save(nsl);
+            emailService.sendEmail(recipient.get("email"), title, content);
+            nsl.setStatus(NotificationStatus.SENT);
+            nsl.setSentAt(LocalDateTime.now());
+        } catch (IOException | TemplateException e) {
+            log.error("Lỗi khi kết xuất mẫu thông báo cho templateCode: {}", templateCode, e);
+            return;
+        } catch (RuntimeException e) {
+            log.error("Lỗi khi gửi email cho recipients: {}", recipient.get("username"), e);
+            nsl.setStatus(NotificationStatus.FAILED);
+            nsl.setLastError(e.getMessage());
+            return;
+        }
+        notificationSendLogRepository.save(nsl);
     }
 }

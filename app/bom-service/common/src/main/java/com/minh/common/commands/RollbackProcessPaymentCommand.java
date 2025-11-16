@@ -15,4 +15,5 @@ public class RollbackProcessPaymentCommand {
     private String reserveProductId;
     private String orderPromotionId;
     private String errorMsg;
+    private String username;
 }

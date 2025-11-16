@@ -60,6 +60,7 @@ public class OrderProcessManager {
                 log.error("Saga Event 1 [Error] : Failed to reserve product for order id: {}, rolling back order creation.", event.getOrderId());
                 RollbackCreateOrderCommand rollbackCommand = new RollbackCreateOrderCommand();
                 rollbackCommand.setOrderId(event.getOrderId());
+                rollbackCommand.setUsername(event.getUsername());
                 rollbackCommand.setErrorMsg(commandResultMessage.exceptionResult().getMessage());
                 commandGateway.sendAndWait(rollbackCommand);
             }
@@ -90,6 +91,7 @@ public class OrderProcessManager {
                         .reserveProductId(event.getReserveProductId())
                         .orderId(event.getOrderId())
                         .errorMsg(commandResultMessage.exceptionResult().getMessage())
+                        .username(event.getUsername())
                         .build();
                 commandGateway.sendAndWait(rollbackCommand);
             }
@@ -120,6 +122,7 @@ public class OrderProcessManager {
                         .reserveProductId(event.getReserveProductId())
                         .orderId(event.getOrderId())
                         .errorMsg(commandResultMessage.exceptionResult().getMessage())
+                        .username(event.getUsername())
                         .build();
                 commandGateway.sendAndWait(rollbackCommand);
             }
@@ -213,6 +216,7 @@ public class OrderProcessManager {
                 .reserveProductId(event.getReserveProductId())
                 .orderId(event.getOrderId())
                 .errorMsg(event.getErrorMsg())
+                .username(event.getUsername())
                 .build();
         commandGateway.sendAndWait(rollbackCommand);
     }
@@ -226,6 +230,7 @@ public class OrderProcessManager {
                 .reserveProductId(event.getReserveProductId())
                 .orderId(event.getOrderId())
                 .errorMsg(event.getErrorMsg())
+                .username(event.getUsername())
                 .build();
         commandGateway.sendAndWait(rollbackCommand);
     }
@@ -234,9 +239,12 @@ public class OrderProcessManager {
     public void on(ProductReservedRollbackedEvent event) {
         log.info("Saga Event Rollback [3]: Received ProductReservedRollbackedEvent for order id: {}", event.getOrderId());
         /// Rollback the order creation.
+        log.info("Received username {}",event.getUsername() );
+
         RollbackCreateOrderCommand rollbackCommand = RollbackCreateOrderCommand.builder()
                 .orderId(event.getOrderId())
                 .errorMsg(event.getErrorMsg())
+                .username(event.getUsername())
                 .build();
         commandGateway.sendAndWait(rollbackCommand);
     }

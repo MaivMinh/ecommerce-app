@@ -1,6 +1,7 @@
 package com.minh.notify_service.functions;
 
 import com.minh.common.functions.input.NotifyOrderConfirmedEvent;
+import com.minh.common.functions.input.NotifyOrderRolledBackEvent;
 import com.minh.notify_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -16,5 +17,10 @@ public class NotifyFunctions {
     @Bean
     public Consumer<NotifyOrderConfirmedEvent> handleNotifyOrderConfirmed() {
         return notificationService::handleNotifyOrderConfirmed;
+    }
+
+    @Bean
+    public Consumer<NotifyOrderRolledBackEvent> handleNotifyOrderRolledBack() {
+        return notificationService::handleNotifyOrderRolledBack;
     }
 }

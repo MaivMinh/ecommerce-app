@@ -16,7 +16,12 @@ public class OrderPromotionProjection {
 
     @EventHandler
     public void on(PromotionAppliedEvent event) {
-        orderPromotionService.applyPromotion(event);
+        try {
+            orderPromotionService.applyPromotion(event);
+        }   catch (RuntimeException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Có lỗi xảy ra khi áp dụng mã giảm giá cho đơn hàng: " + event.getOrderId());
+        }
     }
 
     @EventHandler

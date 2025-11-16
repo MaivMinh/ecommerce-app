@@ -5,5 +5,6 @@ public enum NotifyTemplateCode {
     PAYMENT_SUCCESS,
     ORDER_DELIVERED,
     ORDER_CANCELLED,
-    ORDER_SUCCESS
+    ORDER_SUCCESS,
+    ORDER_FAILED
 }

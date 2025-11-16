@@ -25,6 +25,7 @@ public class PaymentProcessingAggregate {
     private Double total;
     private String currency;
     private String paymentMethodId;
+    private String username;
     private String errorMsg;
 
     public PaymentProcessingAggregate() {
@@ -36,6 +37,7 @@ public class PaymentProcessingAggregate {
         BeanUtils.copyProperties(command, event);
         AggregateLifecycle.apply(event);
     }
+
     @EventSourcingHandler
     public void on(PaymentProcessedEvent event) {
         this.paymentId = event.getPaymentId();
@@ -55,6 +57,7 @@ public class PaymentProcessingAggregate {
         BeanUtils.copyProperties(command, event);
         AggregateLifecycle.apply(event);
     }
+
     @EventSourcingHandler
     public void on(PaymentProcessedRollbackEvent event) {
         this.errorMsg = event.getErrorMsg();

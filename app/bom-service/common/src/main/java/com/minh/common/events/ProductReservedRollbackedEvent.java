@@ -10,5 +10,6 @@ import lombok.*;
 public class ProductReservedRollbackedEvent {
     private String reserveProductId;
     private String orderId;
+    private String username;
     private String errorMsg;
 }

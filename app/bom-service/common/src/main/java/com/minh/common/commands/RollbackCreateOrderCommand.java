@@ -11,5 +11,6 @@ import org.axonframework.modelling.command.TargetAggregateIdentifier;
 public class RollbackCreateOrderCommand {
     @TargetAggregateIdentifier
     private String orderId;
+    private String username;
     private String errorMsg;
 }

@@ -13,4 +13,5 @@ public class PaymentProcessedRollbackEvent {
     private String reserveProductId;
     private String orderPromotionId;
     private String errorMsg;
+    private String username;
 }

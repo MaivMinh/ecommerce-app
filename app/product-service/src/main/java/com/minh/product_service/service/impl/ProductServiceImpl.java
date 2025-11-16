@@ -24,10 +24,12 @@ import com.minh.product_service.service.ProductVariantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -35,6 +37,7 @@ import org.springframework.util.StringUtils;
 import product_service.*;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -47,6 +50,8 @@ public class ProductServiceImpl implements ProductService {
     private final ProductImageService productImageService;
     private final ModelMapper modelMapper;
     private final ReserveProductRepository reserveProductRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final StreamBridge streamBridge;
 
     private static String generateSlug(String name) {
         if (name == null || name.isEmpty()) {
@@ -139,8 +144,27 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ResponseData findProductBySlug(FindProductBySlugQuery query) {
+        if (!StringUtils.hasText(query.getSlug())) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message("Slug không được để trống.")
+                    .build();
+        }
+        String key = this.createCacheKey(query.getSlug());
+        ProductDTO cachedProduct = (ProductDTO) redisTemplate.opsForValue().get(key);
+        if (Objects.nonNull(cachedProduct)) {
+            log.info("Tồn tại sản phẩm với slug {} trong cache.", query.getSlug());
+            return ResponseData.builder()
+                    .status(HttpStatus.OK.value())
+                    .message(ResponseMessages.SUCCESS)
+                    .data(cachedProduct)
+                    .build();
+        }
+        log.info("Không tìm thấy sản phẩm với slug {} trong cache.", query.getSlug());
+
+        /// Cache miss. Fetch from DB and then cache it and return retrieved data.
         Product product = productRepository.findBySlug(query.getSlug());
-        if (product == null) {
+        if (Objects.isNull(product)) {
             return ResponseData.builder()
                     .status(HttpStatus.NOT_FOUND.value())
                     .message(messageCommon.getMessage(ErrorCode.Product.SLUG_NOT_FOUND, query.getSlug()))
@@ -155,11 +179,18 @@ public class ProductServiceImpl implements ProductService {
         productDTO.setProductVariants(new ArrayList<>(productVariantDTOs));
         productDTO.setImages(productImageDTOs.stream().map(ProductImageDTO::getImageUrl).collect(Collectors.toList()));
 
+        /// Cache the productDTO.
+        redisTemplate.opsForValue().set(key, productDTO, 1800, TimeUnit.SECONDS); // Cache for 30 minutes.
+
         return ResponseData.builder()
                 .status(HttpStatus.OK.value())
                 .message(ResponseMessages.SUCCESS)
                 .data(productDTO)
                 .build();
+    }
+
+    private String createCacheKey(String slug) {
+        return "product:" + slug;
     }
 
     @Override
@@ -237,6 +268,13 @@ public class ProductServiceImpl implements ProductService {
                 productImageService.createProductImage(productImageDTO);
             });
         }
+
+        var result = streamBridge.send("publishProductUpdatedEvent-out-0",product.getSlug());
+        if (result) {
+            log.info("Gửi sự kiện cập nhật sản phẩm tới kafka thành công.");
+        }   else {
+            log.error("Gửi sự kiện cập nhật sản phẩm tới kafka thất bại.");
+        }
     }
 
     @Override
@@ -305,6 +343,25 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ResponseData findProductVariantsByProductId(FindProductVariantsByProductIdQuery query) {
+        if (!StringUtils.hasText(query.getProductId())) {
+            return ResponseData.builder()
+                    .status(HttpStatus.BAD_REQUEST.value())
+                    .message("ProductId không được để trống.")
+                    .build();
+        }
+
+        String key = this.createProductCacheKey(query.getProductId());
+        List<ProductVariantDTO> cachedData = (List<ProductVariantDTO>) redisTemplate.opsForValue().get(key);
+        if (Objects.nonNull(cachedData) && !cachedData.isEmpty()) {
+            log.info("Tồn tại biến thể sản phẩm với productId {} trong cache.", query.getProductId());
+            return ResponseData.builder()
+                    .status(HttpStatus.OK.value())
+                    .message(ResponseMessages.SUCCESS)
+                    .data(cachedData)
+                    .build();
+        }
+        log.info("Không tìm thấy biến thể sản phẩm với productId {} trong cache.", query.getProductId());
+
         Product product = productRepository.findById(query.getProductId()).orElse(null);
         if (product == null) {
             return ResponseData.builder()
@@ -322,11 +379,18 @@ public class ProductServiceImpl implements ProductService {
                 })
                 .collect(Collectors.toList());
 
+        /// Cache the product variants.
+        redisTemplate.opsForValue().set(key, data, 1800, TimeUnit.SECONDS);
+
         return ResponseData.builder()
                 .status(HttpStatus.OK.value())
                 .message(ResponseMessages.SUCCESS)
                 .data(data)
                 .build();
+    }
+
+    private String createProductCacheKey(String productId) {
+        return "product:" + productId + ":variants";
     }
 
     @Override
@@ -541,6 +605,13 @@ public class ProductServiceImpl implements ProductService {
                 .setMessage(ResponseMessages.SUCCESS)
                 .addAllProducts(productInfos)
                 .build();
+    }
 
+    @Override
+    public void handleProductUpdatedEvent(String slug) {
+        /// Thực hiện xóa cache liên quan đến sản phẩm có slug tương ứng.
+        String key = this.createCacheKey(slug);
+        redisTemplate.delete(key);
+        log.info("Đã xóa cache với key: {}", key);
     }
 }

@@ -18,6 +18,8 @@ spring:
           destination: order-created
         publishNotifyOrderConfirmed-out-0:
           destination: notify-order-confirmed
+        publishNotifyOrderRolledBack-out-0:
+          destination: notify-order-rolledback
       kafka:
         binder:
           brokers:

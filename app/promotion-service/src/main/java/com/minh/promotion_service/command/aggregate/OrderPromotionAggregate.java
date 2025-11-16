@@ -26,6 +26,7 @@ public class OrderPromotionAggregate {
     private Double amount;
     private String currency;
     private String errorMsg;
+    private String username;
 
     public OrderPromotionAggregate() {
         // Default constructor for Axon framework

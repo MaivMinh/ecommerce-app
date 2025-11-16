@@ -12,4 +12,5 @@ public class PromotionApplyRollbackedEvent {
     private String reserveProductId;
     private String orderId;
     private String errorMsg;
+    private String username;
 }
