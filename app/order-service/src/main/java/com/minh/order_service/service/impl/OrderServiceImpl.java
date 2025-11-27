@@ -31,6 +31,8 @@ import com.minh.order_service.query.queries.SearchOrdersForUserQuery;
 import com.minh.order_service.query.repository.OrderRepository;
 import com.minh.order_service.service.OrderItemService;
 import com.minh.order_service.service.OrderService;
+import game_service.GetShippingAddressRequest;
+import game_service.GetShippingAddressResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -47,8 +49,6 @@ import product_service.FindProductVariantByListProductVariantIdRequest;
 import product_service.FindProductVariantByListProductVariantIdResponse;
 import product_service.OrderItemAndProductVariantId;
 import product_service.ProductVariantRes;
-import support_service.GetShippingAddressRequest;
-import support_service.GetShippingAddressResponse;
 
 import java.math.BigDecimal;
 import java.util.*;

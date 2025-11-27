@@ -1,5 +1,6 @@
 package com.minh.support_service.service.impl;
 
+import com.minh.common.constants.ResponseMessages;
 import com.minh.support_service.DTO.AddressDto;
 import com.minh.support_service.DTO.UserDto;
 import com.minh.support_service.service.AddressService;
@@ -8,10 +9,7 @@ import com.minh.support_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import support_service.GetShippingAddressRequest;
-import support_service.GetShippingAddressResponse;
-import support_service.GetUserInfoRequest;
-import support_service.GetUserInfoResponse;
+import support_service.*;
 
 import java.util.Objects;
 
@@ -72,6 +70,30 @@ public class SupportServiceImpl implements SupportService {
                 .setId(dto.getId())
                 .setEmails(dto.getEmails())
                 .setName(dto.getFullName())
+                .build();
+    }
+
+    @Override
+    public VerifyUserResponse verifyUser(VerifyUserRequest request) {
+        if (!StringUtils.hasText(request.getUsername())) {
+            return VerifyUserResponse.newBuilder()
+                    .setStatus(400)
+                    .setMessage("Thiếu thông tin người dùng.")
+                    .build();
+        }
+
+        String username = request.getUsername();
+        UserDto dto = userService.findByUsername(username);
+        if (Objects.isNull(dto)) {
+            return VerifyUserResponse.newBuilder()
+                    .setStatus(404)
+                    .setMessage("Người dùng không tồn tại.")
+                    .build();
+        }
+
+        return VerifyUserResponse.newBuilder()
+                .setStatus(200)
+                .setMessage(ResponseMessages.SUCCESS)
                 .build();
     }
 }

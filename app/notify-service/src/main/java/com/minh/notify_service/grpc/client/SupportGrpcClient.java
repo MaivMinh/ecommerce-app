@@ -1,14 +1,14 @@
 package com.minh.notify_service.grpc.client;
 
 import com.minh.common.constants.ResponseMessages;
+import game_service.GetUserInfoRequest;
+import game_service.GetUserInfoResponse;
+import game_service.SupportServiceGrpc;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import support_service.GetUserInfoRequest;
-import support_service.GetUserInfoResponse;
-import support_service.SupportServiceGrpc;
 
 import java.util.concurrent.CompletableFuture;
 

@@ -1,4 +1,4 @@
-package com.minh.promotion_service.config;
+package com.minh.common.config;
 
 import com.minh.common.interceptor.AuthorizationInterceptorFilter;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +16,7 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> {
                     request
+                            .requestMatchers("/actuator/**").permitAll()
                             .anyRequest().authenticated();
                 });
         http.csrf(AbstractHttpConfigurer::disable);

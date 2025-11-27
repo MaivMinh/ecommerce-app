@@ -1,15 +1,14 @@
 package com.minh.order_service.grpc.client;
 
+import game_service.GetShippingAddressRequest;
+import game_service.GetShippingAddressResponse;
+import game_service.SupportServiceGrpc;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
-import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import support_service.GetShippingAddressRequest;
-import support_service.GetShippingAddressResponse;
-import support_service.SupportServiceGrpc;
 
 import java.util.concurrent.CompletableFuture;
 

@@ -18,6 +18,8 @@ import com.minh.notify_service.service.NotificationTemplateService;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
+import game_service.GetUserInfoRequest;
+import game_service.GetUserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -26,8 +28,6 @@ import org.springframework.util.StringUtils;
 import product_service.FindProductInfoByProductVariantIdRequest;
 import product_service.FindProductInfoByProductVariantIdResponse;
 import product_service.ProductInfo;
-import support_service.GetUserInfoRequest;
-import support_service.GetUserInfoResponse;
 
 import java.io.IOException;
 import java.io.StringReader;

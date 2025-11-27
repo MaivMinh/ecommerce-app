@@ -78,4 +78,18 @@ public class ErrorCode {
         public static final String TEMPLATE_CODE_EXISTED = "notification.template.template.code.existed";
         public static final String NOT_FOUND = "notification.template.not.found";
     }
+    public static class Campaign {
+        public static final String NOT_FOUND = "campaign.not.found";
+    }
+    public static class Game {
+        public static final String NOT_FOUND = "game.not.found";
+        public static final String INVALID_REQUEST = "game.invalid.request";
+    }
+    public static class Voucher {
+        public static final String NOT_FOUND = "voucher.not.found";
+    }
+
+    public static class Attend {
+        public static final String NOT_FOUND = "attend.not.found";
+    }
 }

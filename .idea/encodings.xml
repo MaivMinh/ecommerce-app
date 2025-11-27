@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="Encoding">
+  <component name="Encoding" defaultCharsetForPropertiesFiles="UTF-8">
     <file url="file://$PROJECT_DIR$/app/api-gateway/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/api-gateway/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/api-gateway/src/main/resources/application.yml" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/bom-service/common/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/cart-service/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/config-server/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/notification-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/bom-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/bom-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/event-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/game-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/game2-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/notify-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/order-service/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/product-service/src/main/resources/i18n/messages_vi.properties" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/payment-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/product-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/promotion-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/service-discovery/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/user-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/support-service/src/main/java" charset="UTF-8" />
   </component>
 </project>

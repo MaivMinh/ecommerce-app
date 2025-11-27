@@ -38,15 +38,16 @@
 
     </properties>
     <modules>
-        <module>../service-discovery</module>
-        <module>../product-service</module>
-        <module>../order-service</module>
-        <module>../payment-service</module>
-        <module>../promotion-service</module>
-        <module>../api-gateway</module>
         <module>./common</module>
         <module>../support-service</module>
+        <module>../product-service</module>
+        <module>../payment-service</module>
+        <module>../promotion-service</module>
+        <module>../order-service</module>
         <module>../notify-service</module>
+        <module>../api-gateway</module>
+        <module>../service-discovery</module>
+        <module>../event-service</module>
     </modules>
     <dependencies>
     </dependencies>

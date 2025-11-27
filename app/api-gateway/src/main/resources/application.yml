@@ -82,9 +82,19 @@ spring:
           filters:
             - name: CircuitBreaker
               args:
-                name: promotionService
+                name: notifyService
                 fallbackUri: "forward:/notify/contact-support"
 
+        - id: event-service
+          uri: lb://event-service
+          predicates:
+            - Path=/api/games/**,/api/games,/api/campaigns,/api/campaigns/**,/api/questions/**,/api/questions,/api/vouchers/**,/api/vouchers
+            - Method=GET,POST,PUT,DELETE,PATCH
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: gameService
+                fallbackUri: "forward:/events/contact-support"
       httpclient:
         connect-timeout: 10000
         response-timeout: 20s

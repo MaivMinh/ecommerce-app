@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.*;
 public class CartController {
     private final CartItemService cartService;
 
-    /// Hàm thực hiện tạ một mục trong giỏ hàng của người dùng
-    /// DONE
     @PreAuthorize("hasRole('USER')")
     @PostMapping(value = "/cart-items")
     public ResponseEntity<ResponseData> createCartItem(@RequestBody @Valid CartItemDTO cartItemDTO) {

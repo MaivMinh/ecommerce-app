@@ -24,4 +24,11 @@ public class SupportGrpcServer extends SupportServiceGrpc.SupportServiceImplBase
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
+
+    @Override
+    public void verifyUser(VerifyUserRequest request, StreamObserver<VerifyUserResponse> responseObserver) {
+        VerifyUserResponse response = supportService.verifyUser(request);
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
 }

@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="common-service" />
         <module name="payment-service" />
+        <module name="event-service" />
         <module name="support-service" />
         <module name="promotion-service" />
         <module name="api-gateway" />
@@ -18,5 +19,25 @@
         <module name="service-discovery" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="game-service" target="21" />
+      <module name="game2-service" target="21" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="api-gateway" options="" />
+      <module name="common-service" options="" />
+      <module name="event-service" options="" />
+      <module name="game-service" options="" />
+      <module name="game2-service" options="" />
+      <module name="notify-service" options="" />
+      <module name="order-service" options="" />
+      <module name="payment-service" options="" />
+      <module name="product-service" options="" />
+      <module name="promotion-service" options="" />
+      <module name="service-discovery" options="" />
+      <module name="support-service" options="" />
+    </option>
   </component>
 </project>

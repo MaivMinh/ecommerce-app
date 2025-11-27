@@ -45,5 +45,4 @@ public class PromotionCommandController {
                 , TimeUnit.MILLISECONDS);
         return ResponseEntity.status(HttpStatus.CREATED.value()).body(ResponseData.builder().message(ResponseMessages.SUCCESS).build());
     }
-/**/
 }

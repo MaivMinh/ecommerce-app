@@ -86,4 +86,16 @@ public class FallbackController {
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(response));
     }
+
+    @RequestMapping(value = "/events/contact-support")
+    public Mono<ResponseEntity<Map<String, Object>>> eventServiceContactSupport() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
+        response.put("message", "Event Service không hỗ trợ. Vui lòng gọi team hỗ trợ");
+        response.put("timestamp", new Date());
+
+        return Mono.just(ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(response));
+    }
 }

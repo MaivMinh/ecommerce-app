@@ -6,8 +6,19 @@
       <list>
         <option value="$PROJECT_DIR$/app/api-gateway/pom.xml" />
         <option value="$PROJECT_DIR$/app/bom-service/pom.xml" />
+        <option value="$PROJECT_DIR$/app/game-service/pom.xml" />
+        <option value="$PROJECT_DIR$/app/Bản sao support-service/pom.xml" />
+        <option value="$PROJECT_DIR$/app/event-service/pom.xml" />
       </list>
     </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/app/game-service/pom.xml" />
+        <option value="$PROJECT_DIR$/app/game2-service/pom.xml" />
+      </set>
+    </option>
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="21 (2)" project-jdk-type="JavaSDK" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" project-jdk-name="21 (2)" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/../out" />
+  </component>
 </project>
