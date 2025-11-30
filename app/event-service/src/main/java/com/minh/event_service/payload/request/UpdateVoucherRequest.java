@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Instant;
+
 @Getter
 @Setter
 public class UpdateVoucherRequest {
@@ -18,5 +20,6 @@ public class UpdateVoucherRequest {
     private Double value;
     private Double maxValue;
     @NotNull
-    private String expirationDate;
+    private Instant expirationDate;
+    private Integer voucherOrder;
 }

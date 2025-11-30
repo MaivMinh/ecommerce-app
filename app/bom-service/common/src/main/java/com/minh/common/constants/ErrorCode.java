@@ -92,4 +92,12 @@ public class ErrorCode {
     public static class Attend {
         public static final String NOT_FOUND = "attend.not.found";
     }
+
+    public static class QuestionCollection {
+        public static final String NOT_FOUND = "question.collection.not.found";
+    }
+
+    public static class Question {
+        public static final String NOT_FOUND = "question.not.found";
+    }
 }

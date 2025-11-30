@@ -10,7 +10,9 @@ import java.util.List;
 
 @Getter
 @Setter
-public class CreateQuestionsCollectionRequest {
+public class UpdateQuestionsCollectionRequest {
+    @NotBlank
+    private String id;
     @NotBlank
     private String title;
     @NotNull

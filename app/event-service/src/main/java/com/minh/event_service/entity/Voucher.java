@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Table(name = "vouchers")
 @Entity
@@ -22,5 +23,6 @@ public class Voucher extends BaseEntity {
     private BigDecimal discountPercentage;
     private BigDecimal value;
     private BigDecimal maxValue;
-    private DateTime expirationDate;
+    private Instant expirationDate;
+    private Integer voucherOrder;
 }

@@ -9,6 +9,7 @@ import com.minh.event_service.entity.Voucher;
 import com.minh.event_service.payload.request.CreateVoucherRequest;
 import com.minh.event_service.payload.request.SearchVouchersRequest;
 import com.minh.event_service.payload.request.UpdateVoucherRequest;
+import com.minh.event_service.payload.request.VoucherRequest;
 import com.minh.event_service.payload.response.VoucherResponse;
 import com.minh.event_service.repository.VoucherRepository;
 import com.minh.event_service.service.VoucherService;
@@ -17,6 +18,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -78,5 +81,62 @@ public class VoucherServiceImpl implements VoucherService {
                 () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Voucher.NOT_FOUND, id))
         );
         voucherRepository.delete(saved);
+    }
+
+    @Override
+    public void createVouchersBatch(List<VoucherRequest> vouchers, String campaignId) {
+        if (vouchers.isEmpty()) {
+            return;
+        }
+
+        List<Voucher> entities = vouchers.stream()
+                .map(voucherRequest -> {
+                    Voucher voucher = new Voucher();
+                    modelMapper.map(voucherRequest, voucher);
+                    voucher.setId(AppUtils.generateUUIDv7());
+                    voucher.setCampaignId(campaignId);
+                    return voucher;
+                })
+                .toList();
+
+        voucherRepository.saveAll(entities);
+    }
+
+    @Override
+    public List<VoucherResponse> getVouchersByCampaignId(String id) {
+        List<Voucher> vouchers = voucherRepository.getVouchersByCampaignId(id);
+        return vouchers.stream()
+                .map(voucher -> modelMapper.map(voucher, VoucherResponse.class))
+                .toList();
+    }
+
+    @Override
+    public void deleteBatch(List<VoucherResponse> values) {
+        List<Voucher> vouchers = values.stream()
+                .map(voucherResponse -> {
+                    Voucher voucher = new Voucher();
+                    modelMapper.map(voucherResponse, voucher);
+                    return voucher;
+                })
+                .toList();
+        voucherRepository.deleteAll(vouchers);
+    }
+
+    @Override
+    public void saveAllUpdatedVouchers(List<UpdateVoucherRequest> updatedVouchers) {
+        List<Voucher> vouchers = updatedVouchers.stream()
+                .map(updateVoucherRequest -> {
+                    Voucher voucher = new Voucher();
+                    modelMapper.map(updateVoucherRequest, voucher);
+                    return voucher;
+                })
+                .toList();
+
+        voucherRepository.saveAll(vouchers);
+    }
+
+    @Override
+    public void deleteVouchersByCampaignId(String id) {
+        voucherRepository.deleteVouchersByCampaignId(id);
     }
 }

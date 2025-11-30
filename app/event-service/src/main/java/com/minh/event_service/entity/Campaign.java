@@ -20,4 +20,5 @@ public class Campaign extends BaseEntity {
     private String name;
     private Instant startTime;
     private Instant endTime;
+    private String questionCollectionId;
 }

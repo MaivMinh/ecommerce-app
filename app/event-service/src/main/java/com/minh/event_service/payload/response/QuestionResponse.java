@@ -1,23 +1,16 @@
-package com.minh.event_service.payload.request;
+package com.minh.event_service.payload.response;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class QuestionRequest {
+public class QuestionResponse {
     private String id;
-    @NotBlank
     private String content;
-    @NotBlank
     private String optionA;
-    @NotBlank
     private String optionB;
-    @NotBlank
     private String optionC;
-    @NotBlank
     private String optionD;
-    @NotBlank
     private String correctOption;
 }

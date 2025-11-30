@@ -5,8 +5,12 @@ import com.minh.event_service.payload.request.SearchVouchersRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public interface VoucherRepository extends JpaRepository<Voucher, String> {
@@ -19,4 +23,15 @@ public interface VoucherRepository extends JpaRepository<Voucher, String> {
                 and (coalesce(:#{#request.toExpirationDate} , null) is null or v.expirationDate <= :#{#request.toExpirationDate})
             """)
     Page<Voucher> searchVouchers(SearchVouchersRequest request, Pageable pageable);
+
+    @Query(value = """
+            select v from Voucher v where v.campaignId = :id
+            """)
+    List<Voucher> getVouchersByCampaignId(@Param("id") String id);
+
+    @Modifying
+    @Query(value = """
+            delete from Voucher v where v.campaignId = :id
+            """)
+    void deleteVouchersByCampaignId(@Param("id") String id);
 }

@@ -88,7 +88,7 @@ spring:
         - id: event-service
           uri: lb://event-service
           predicates:
-            - Path=/api/games/**,/api/games,/api/campaigns,/api/campaigns/**,/api/questions/**,/api/questions,/api/vouchers/**,/api/vouchers
+            - Path=/api/games/**,/api/games,/api/campaigns,/api/campaigns/**,/api/questions/**,/api/questions,/api/vouchers/**,/api/vouchers,/api/question-collections/**,/api/question-collections
             - Method=GET,POST,PUT,DELETE,PATCH
           filters:
             - name: CircuitBreaker

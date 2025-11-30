@@ -1,4 +1,4 @@
-package com.minh.event_service.payload.response;
+package com.minh.event_service.payload.request;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -8,13 +8,13 @@ import java.time.Instant;
 
 @Getter
 @Setter
-public class VoucherResponse {
+public class VoucherRequest {
     private String id;
     private String campaignId;
     private String code;
-    private Double discountPercentage;
-    private Double value;
-    private Double maxValue;
-    private String expirationDate;
+    private BigDecimal discountPercentage;
+    private BigDecimal value;
+    private BigDecimal maxValue;
+    private Instant expirationDate;
     private Integer voucherOrder;
 }
