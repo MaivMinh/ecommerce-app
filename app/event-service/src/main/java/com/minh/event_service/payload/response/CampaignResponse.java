@@ -16,4 +16,5 @@ public class CampaignResponse {
     private String endTime;
     private String questionCollectionId;
     private List<VoucherResponse> vouchers;
+    private List<CampaignImageResponse> campaignImages;
 }

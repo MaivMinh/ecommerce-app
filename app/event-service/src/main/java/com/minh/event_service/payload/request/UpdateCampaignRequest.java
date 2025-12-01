@@ -26,4 +26,5 @@ public class UpdateCampaignRequest {
     private String questionCollectionId;
     @NotEmpty
     private List<VoucherRequest> vouchers;
+    private List<CampaignImageRequest> campaignImages;
 }

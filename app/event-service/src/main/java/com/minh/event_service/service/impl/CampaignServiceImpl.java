@@ -6,21 +6,22 @@ import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
 import com.minh.event_service.entity.Campaign;
+import com.minh.event_service.entity.CampaignImage;
 import com.minh.event_service.payload.request.*;
+import com.minh.event_service.payload.response.CampaignImageResponse;
 import com.minh.event_service.payload.response.CampaignResponse;
 import com.minh.event_service.payload.response.GameResponse;
 import com.minh.event_service.payload.response.VoucherResponse;
+import com.minh.event_service.repository.CampaignImageRepository;
 import com.minh.event_service.repository.CampaignRepository;
-import com.minh.event_service.service.CampaignService;
-import com.minh.event_service.service.GameService;
-import com.minh.event_service.service.QuestionService;
-import com.minh.event_service.service.VoucherService;
+import com.minh.event_service.service.*;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -38,6 +39,8 @@ public class CampaignServiceImpl implements CampaignService {
     private final GameService gameService;
     private final QuestionService questionService;
     private final VoucherService voucherService;
+    private final CampaignImageService campaignImageService;
+    private final CampaignImageRepository campaignImageRepository;
 
     @Override
     @Transactional
@@ -56,6 +59,9 @@ public class CampaignServiceImpl implements CampaignService {
         /// Thực hiện tạo mới các voucher.
         List<VoucherRequest> vouchers = request.getVouchers();
         voucherService.createVouchersBatch(vouchers, saved.getId());
+
+        /// Thực hiện lưu ảnh cho campaign.
+        campaignImageService.saveCampaignImagesBatch(request.getImageUrls(), saved.getId());
     }
 
     @Override
@@ -69,6 +75,15 @@ public class CampaignServiceImpl implements CampaignService {
             List<VoucherResponse> vouchers = voucherService.getVouchersByCampaignId(campaign.getId());
             campaignResponse.setVouchers(vouchers);
             return campaignResponse;
+        });
+
+
+        /// Lấy danh sách các ảnh cho các campaign.
+        List<String> campaignIds = pagedCampaigns.stream().map(Campaign::getId).toList();
+        Map<String, List<CampaignImageResponse>> campaignImagesMap = campaignImageService.getCampaignImagesByCampaignIds(campaignIds);
+        pagedCampaignRes.forEach(campaignRes -> {
+            List<CampaignImageResponse> images = campaignImagesMap.get(campaignRes.getId());
+            campaignRes.setCampaignImages(images);
         });
 
         return ResponseData.builder()
@@ -95,6 +110,12 @@ public class CampaignServiceImpl implements CampaignService {
         CampaignResponse campaignResponse = modelMapper.map(campaign, CampaignResponse.class);
         List<VoucherResponse> vouchers = voucherService.getVouchersByCampaignId(campaign.getId());
         campaignResponse.setVouchers(vouchers);
+
+        /// Lấy danh sách ảnh cho campaign
+        List<String> campaignIds = List.of(campaign.getId());
+        Map<String, List<CampaignImageResponse>> campaignImagesMap = campaignImageService.getCampaignImagesByCampaignIds(campaignIds);
+        List<CampaignImageResponse> images = campaignImagesMap.get(campaign.getId());
+        campaignResponse.setCampaignImages(images);
 
         return ResponseData.builder()
                 .status(200)
@@ -153,6 +174,38 @@ public class CampaignServiceImpl implements CampaignService {
             throw new RuntimeException(messageCommon.getMessage(ErrorCode.QuestionCollection.NOT_FOUND, request.getQuestionCollectionId()));
         }
 
+        /// Cập nhật hình ảnh cho Voucher.
+        List<CampaignImageRequest> campaignImageRequests = request.getCampaignImages();
+        Map<String, List<CampaignImageResponse>> savedCampaignImagesMap = campaignImageService.getCampaignImagesByCampaignIds(List.of(request.getId()));
+        List<CampaignImageResponse> savedCampaignImages = savedCampaignImagesMap.getOrDefault(request.getId(), new ArrayList<>());
+        List<String> newImageUrls = new ArrayList<>();
+        if (!savedCampaignImages.isEmpty()) {
+            Map<String, CampaignImageResponse> savedCampaignImagesMapById = savedCampaignImages.stream()
+                    .collect(java.util.stream.Collectors.toMap(CampaignImageResponse::getId, img -> img));
+            for (CampaignImageRequest imgReq : campaignImageRequests) {
+                if (!StringUtils.hasText(imgReq.getId())) {
+                    newImageUrls.add(imgReq.getImageUrl());
+                } else {
+                    savedCampaignImagesMapById.remove(imgReq.getId());
+                }
+            }
+
+            // Xóa các ảnh không còn trong request
+            if (!savedCampaignImagesMapById.isEmpty()) {
+                List<String> imagesToDelete = new ArrayList<>();
+                for (CampaignImageResponse imgRes : savedCampaignImagesMapById.values()) {
+                    imagesToDelete.add(imgRes.getId());
+                }
+                campaignImageService.deleteAllById(imagesToDelete);
+            }
+        } else {
+            // Nếu không có ảnh lưu trong db, thêm tất cả ảnh từ request
+            newImageUrls = campaignImageRequests.stream()
+                    .map(CampaignImageRequest::getImageUrl)
+                    .toList();
+        }
+        campaignImageService.saveCampaignImagesBatch(newImageUrls, request.getId());
+
         modelMapper.map(request, saved);
         campaignRepository.save(saved);
     }
@@ -166,6 +219,9 @@ public class CampaignServiceImpl implements CampaignService {
 
         /// Xóa tất cả voucher liên quan đến campaign
         voucherService.deleteVouchersByCampaignId(saved.getId());
+
+        /// Xóa các ảnh liên quan đến campaign.
+        campaignImageService.deleteAllByCampaignId(saved.getId());
 
         campaignRepository.deleteById(saved.getId());
     }

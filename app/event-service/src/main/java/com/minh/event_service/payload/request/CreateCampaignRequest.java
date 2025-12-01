@@ -24,4 +24,5 @@ public class CreateCampaignRequest {
     private String questionCollectionId;
     @NotEmpty
     private List<VoucherRequest> vouchers;
+    private List<String> imageUrls;
 }
