@@ -6,12 +6,8 @@ import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
 import com.minh.event_service.entity.Campaign;
-import com.minh.event_service.entity.CampaignImage;
 import com.minh.event_service.payload.request.*;
-import com.minh.event_service.payload.response.CampaignImageResponse;
-import com.minh.event_service.payload.response.CampaignResponse;
-import com.minh.event_service.payload.response.GameResponse;
-import com.minh.event_service.payload.response.VoucherResponse;
+import com.minh.event_service.payload.response.*;
 import com.minh.event_service.repository.CampaignImageRepository;
 import com.minh.event_service.repository.CampaignRepository;
 import com.minh.event_service.service.*;
@@ -19,9 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -40,7 +36,7 @@ public class CampaignServiceImpl implements CampaignService {
     private final QuestionService questionService;
     private final VoucherService voucherService;
     private final CampaignImageService campaignImageService;
-    private final CampaignImageRepository campaignImageRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     @Transactional
@@ -107,15 +103,32 @@ public class CampaignServiceImpl implements CampaignService {
                 () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Campaign.NOT_FOUND, id))
         );
 
-        CampaignResponse campaignResponse = modelMapper.map(campaign, CampaignResponse.class);
+        CampaignDetailResponse campaignResponse = modelMapper.map(campaign, CampaignDetailResponse.class);
         List<VoucherResponse> vouchers = voucherService.getVouchersByCampaignId(campaign.getId());
         campaignResponse.setVouchers(vouchers);
+
+        /// Lấy thông tin game.
+        GameResponse game = gameService.getGameDetailById(campaign.getGameId());
+        campaignResponse.setGame(game);
+
+        /// Lấy tên bộ câu hỏi.
+        ResponseData questionCollectionRes = questionService.getQuestionCollectionById(campaign.getQuestionCollectionId());
+        if (!Objects.isNull(questionCollectionRes.getData())) {
+            QuestionCollectionResponse questionCollection = (QuestionCollectionResponse) questionCollectionRes.getData();
+            campaignResponse.setQuestionCollectionName(questionCollection.getTitle());
+        }
 
         /// Lấy danh sách ảnh cho campaign
         List<String> campaignIds = List.of(campaign.getId());
         Map<String, List<CampaignImageResponse>> campaignImagesMap = campaignImageService.getCampaignImagesByCampaignIds(campaignIds);
         List<CampaignImageResponse> images = campaignImagesMap.get(campaign.getId());
         campaignResponse.setCampaignImages(images);
+
+        /// Kiểm tra xem người dùng đã tham gia sự kiện chưa.
+        String currentUser = AppUtils.getUsername();
+        String redisKeyCheck = "event:attendance:" + campaign.getId() + ":user:" + currentUser;
+        Boolean isRegistered = redisTemplate.hasKey(redisKeyCheck);
+        campaignResponse.setIsRegistered(isRegistered);
 
         return ResponseData.builder()
                 .status(200)

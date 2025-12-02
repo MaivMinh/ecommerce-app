@@ -16,6 +16,7 @@ public interface CampaignRepository extends JpaRepository<Campaign, String> {
             select c from Campaign c
             where (coalesce(:#{#request.gameId}, null) is null or c.gameId = :#{#request.gameId} )
               and (coalesce(:#{#request.name}, null) is null or c.name like %:#{#request.name}%)
+              and (c.startTime >= current_timestamp)
               and (coalesce(:#{#request.fromStartTime}, null) is null or c.startTime >= :#{#request.fromStartTime})
               and (coalesce(:#{#request.toStartTime}, null) is null or c.startTime <= :#{#request.toStartTime})
               and (coalesce(:#{#request.fromEndTime}, null) is null or c.endTime >= :#{#request.fromEndTime})

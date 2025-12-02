@@ -100,4 +100,7 @@ public class ErrorCode {
     public static class Question {
         public static final String NOT_FOUND = "question.not.found";
     }
+    public static class Event {
+        public static final String ALREADY_REGISTERED = "event.already.registered";
+    }
 }

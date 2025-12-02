@@ -109,3 +109,11 @@ resilience4j:
         wait-duration-in-open-state: 20000
         permitted-number-of-calls-in-half-open-state: 15
         sliding-window-type: COUNT_BASED
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000
+      repositories:
+        enabled: false
