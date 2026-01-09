@@ -15,6 +15,7 @@
     <file url="file://$PROJECT_DIR$/app/payment-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/product-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/promotion-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/app/realtime-gateway/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/service-discovery/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/support-service/src/main/java" charset="UTF-8" />
   </component>

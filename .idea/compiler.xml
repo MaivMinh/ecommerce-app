@@ -18,6 +18,15 @@
         <module name="notify-service" />
         <module name="service-discovery" />
       </profile>
+      <profile name="Annotation profile for realtime-gateway" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
+        </processorPath>
+        <module name="realtime-gateway" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="game-service" target="21" />
@@ -36,6 +45,7 @@
       <module name="payment-service" options="" />
       <module name="product-service" options="" />
       <module name="promotion-service" options="" />
+      <module name="realtime-gateway" options="" />
       <module name="service-discovery" options="" />
       <module name="support-service" options="" />
     </option>

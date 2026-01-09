@@ -107,6 +107,10 @@ public class AuthorizationInterceptorFilter extends OncePerRequestFilter {
 
     private String extractToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
+        if (!StringUtils.hasText(bearerToken)) {
+            /// extract in request param.
+            bearerToken = request.getParameter("token");
+        }
         if (StringUtils.hasText(bearerToken)) {
             return bearerToken.substring(7);
         }
