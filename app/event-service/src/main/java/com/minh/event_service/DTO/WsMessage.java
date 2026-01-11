@@ -1,4 +1,29 @@
 package com.minh.event_service.DTO;
 
+import lombok.*;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class WsMessage {
+    private String type;
+    private String eventId;
+    private String clientTime;
+    private String questionId;
+    private Boolean isCorrect;
+    private String username;
+
+    @Override
+    public String toString() {
+        return "WsMessage{" +
+                "type='" + type + '\'' +
+                ", eventId='" + eventId + '\'' +
+                ", clientTime='" + clientTime + '\'' +
+                ", questionId='" + questionId + '\'' +
+                ", isCorrect=" + isCorrect +
+                ", username='" + username + '\'' +
+                '}';
+    }
 }

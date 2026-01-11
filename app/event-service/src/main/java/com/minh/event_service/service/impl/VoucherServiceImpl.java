@@ -128,6 +128,7 @@ public class VoucherServiceImpl implements VoucherService {
                 .map(updateVoucherRequest -> {
                     Voucher voucher = new Voucher();
                     modelMapper.map(updateVoucherRequest, voucher);
+                    voucher.setId(updateVoucherRequest.getId());
                     return voucher;
                 })
                 .toList();

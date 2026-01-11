@@ -20,7 +20,7 @@ public class RealtimeEventConsumer {
     private final SessionRegistry sessionRegistry;
 
     @KafkaListener(
-            topics = "event.realtime",
+            topics = {"event.realtime", "event.player.participate"},
             groupId = "realtime-gateway"
     )
     public void consume(String message) {
@@ -28,6 +28,7 @@ public class RealtimeEventConsumer {
             RealtimeEvent event =
                     objectMapper.readValue(message, RealtimeEvent.class);
 
+            log.info("Received realtime event: {}", message);
             pushToClients(event);
 
         } catch (Exception e) {
@@ -41,6 +42,7 @@ public class RealtimeEventConsumer {
         wsMessage.put("payload", event.getPayload());
         wsMessage.put("eventId", event.getEventId());
         wsMessage.put("executedAt", event.getExecuteAt());
+        wsMessage.put("vouchers", event.getVouchers());
 
         sessionRegistry.broadcast(wsMessage);
     }

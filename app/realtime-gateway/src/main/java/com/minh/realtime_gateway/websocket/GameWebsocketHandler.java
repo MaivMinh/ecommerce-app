@@ -1,11 +1,14 @@
 package com.minh.realtime_gateway.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minh.realtime_gateway.DTOs.GameEvent;
+import com.minh.realtime_gateway.DTOs.RealtimeEvent;
 import com.minh.realtime_gateway.DTOs.WsMessage;
 import com.minh.realtime_gateway.session.SessionRegistry;
 import io.swagger.v3.core.util.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 
@@ -18,6 +21,7 @@ import java.util.Map;
 public class GameWebsocketHandler implements WebSocketHandler {
     private final SessionRegistry registry;
     private final ObjectMapper objectMapper;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -34,25 +38,46 @@ public class GameWebsocketHandler implements WebSocketHandler {
         try {
             Map<String, Object> welcomeMsg = new HashMap<>();
             welcomeMsg.put("type", "CONNECTED");
-            welcomeMsg.put("message", "Welcome " + username + "!");
+            welcomeMsg.put("message", "Kết nối thành công. Vui lòng đợi trong giây lát!");
             welcomeMsg.put("timestamp", System.currentTimeMillis());
 
             String json = objectMapper.writeValueAsString(welcomeMsg);
-            log.info("📤 Sending welcome message: {}", json);
-
             session.sendMessage(new TextMessage(json));
             log.info("✅ Welcome message sent successfully");
 
+            /// Emit event to Kafka that user has connected.
+            RealtimeEvent event = RealtimeEvent.builder()
+                    .type("PLAYER_PARTICIPATED")
+                    .eventId("")
+                    .executeAt(System.currentTimeMillis())
+                    .payload(objectMapper.valueToTree(Map.of(
+                            "username", username,
+                            "event", "PLAYER_PARTICIPATED")
+                    ))
+                    .build();
+
+            kafkaTemplate.send(
+                    "event.player.participate",
+                    objectMapper.writeValueAsString(event)
+            );
         } catch (Exception e) {
             log.error("❌ Error sending welcome message", e);
         }
-        registry.addSession(session);
     }
 
     @Override
     public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
         WsMessage wsMessage = Json.mapper().readValue(message.getPayload().toString(), WsMessage.class);
-        log.info("Received message from session {}: {}", session.getId(), wsMessage.toString());
+
+        /// Handle incoming messages when game is running.
+        if (wsMessage.getType().equals("PLAYER_ANSWER")) {
+            kafkaTemplate.send(
+                    "event.game.answer",
+                    wsMessage.getEventId(),
+                    objectMapper.writeValueAsString(wsMessage)
+            );
+        }
+
     }
 
     @Override

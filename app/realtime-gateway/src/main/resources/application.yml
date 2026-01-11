@@ -19,6 +19,10 @@ spring:
   threads:
     virtual:
       enabled: true
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   messages:
     basename: i18n/messages
     encoding: UTF-8

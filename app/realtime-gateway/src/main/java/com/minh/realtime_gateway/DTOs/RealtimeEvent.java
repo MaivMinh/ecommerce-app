@@ -1,8 +1,7 @@
 package com.minh.realtime_gateway.DTOs;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.*;
-
-import java.util.Map;
 
 @Getter
 @Setter
@@ -13,5 +12,16 @@ public class RealtimeEvent {
     private String type;
     private String eventId;
     private Long executeAt;
-    private Map<String, Object> payload;
+    private JsonNode payload;
+    private JsonNode vouchers;
+
+    @Override
+    public String toString() {
+        return "RealtimeEvent{" +
+                "type='" + type + '\'' +
+                ", eventId='" + eventId + '\'' +
+                ", executeAt=" + executeAt +
+                ", payload=" + payload +
+                '}';
+    }
 }

@@ -2,26 +2,18 @@ package com.minh.realtime_gateway.DTOs;
 
 import lombok.*;
 
+import java.io.Serializable;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class WsMessage {
+public class WsMessage implements Serializable {
     private String type;
     private String eventId;
     private String clientTime;
     private String questionId;
-    private String answer;
-
-    @Override
-    public String toString() {
-        return "WsMessage{" +
-                "type='" + type + '\'' +
-                ", eventId='" + eventId + '\'' +
-                ", clientTime='" + clientTime + '\'' +
-                ", questionId='" + questionId + '\'' +
-                ", answer='" + answer + '\'' +
-                '}';
-    }
+    private Boolean isCorrect;
+    private String username;
 }
