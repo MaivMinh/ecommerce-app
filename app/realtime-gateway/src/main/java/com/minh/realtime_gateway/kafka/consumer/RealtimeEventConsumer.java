@@ -43,6 +43,7 @@ public class RealtimeEventConsumer {
         wsMessage.put("eventId", event.getEventId());
         wsMessage.put("executedAt", event.getExecuteAt());
         wsMessage.put("vouchers", event.getVouchers());
+        wsMessage.put("participants", event.getParticipants());
 
         sessionRegistry.broadcast(wsMessage);
     }

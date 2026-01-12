@@ -8,12 +8,14 @@ import com.minh.realtime_gateway.session.SessionRegistry;
 import io.swagger.v3.core.util.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -22,6 +24,7 @@ public class GameWebsocketHandler implements WebSocketHandler {
     private final SessionRegistry registry;
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -46,6 +49,7 @@ public class GameWebsocketHandler implements WebSocketHandler {
             log.info("✅ Welcome message sent successfully");
 
             /// Emit event to Kafka that user has connected.
+            Integer participants = this.updateParticipationCount();
             RealtimeEvent event = RealtimeEvent.builder()
                     .type("PLAYER_PARTICIPATED")
                     .eventId("")
@@ -54,15 +58,35 @@ public class GameWebsocketHandler implements WebSocketHandler {
                             "username", username,
                             "event", "PLAYER_PARTICIPATED")
                     ))
+                    .participants(participants)
                     .build();
 
             kafkaTemplate.send(
                     "event.player.participate",
                     objectMapper.writeValueAsString(event)
             );
+
+
         } catch (Exception e) {
             log.error("❌ Error sending welcome message", e);
         }
+    }
+
+    /*
+        Hàm thực hiện cập nhật số lượng participants tham gia vào Event hiện tại.
+        Hàm này sẽ gửi một sự kiện đến Kafka để cập nhật số lượng người chơi tham gia.
+     */
+    private Integer updateParticipationCount() {
+        Integer result = null;
+        String participantsKey = "event:current:participants";
+        result = (Integer) redisTemplate.opsForValue().get(participantsKey);
+        if (Objects.isNull(result)) {
+            result = 1;
+        } else {
+            result += 1;
+        }
+        redisTemplate.opsForValue().set(participantsKey, result);
+        return result;
     }
 
     @Override

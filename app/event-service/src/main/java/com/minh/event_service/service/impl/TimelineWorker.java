@@ -1,9 +1,10 @@
 package com.minh.event_service.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minh.common.utils.AppUtils;
 import com.minh.event_service.DTO.UserScoreData;
+import com.minh.event_service.entity.PlayerVoucher;
 import com.minh.event_service.entity.TimelineEvent;
-import com.minh.event_service.entity.Voucher;
 import com.minh.event_service.enums.GameEventType;
 import com.minh.event_service.payload.response.PlayerVoucherResponse;
 import com.minh.event_service.payload.response.VoucherResponse;
@@ -13,6 +14,7 @@ import com.minh.event_service.service.VoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @Slf4j
@@ -69,12 +72,14 @@ public class TimelineWorker {
         if (event.getType().equals(GameEventType.CLEANUP.toString())) {
             /// Xóa toàn bộ dữ liệu liên quan đến Event trong Redis.
             String scoreKey = "event:" + event.getEventId() + ":scores";
-            String rankingKey = "event:" + event.getEventId() + ":ranking";
             String playerVoucherKey = "event:" + event.getEventId() + ":playerVouchers";
+            String participantsKey = "event:current:participants";
 
             redisTemplate.delete(scoreKey);
-            redisTemplate.delete(rankingKey);
             redisTemplate.delete(playerVoucherKey);
+            redisTemplate.delete(participantsKey);
+            redisTemplate.delete("event:" + event.getEventId() + ":ranking:snapshot");
+            redisTemplate.delete("event:" + event.getEventId() + ":username:*");
 
             log.info("Cleaned up Redis data for event {}", event.getEventId());
             return;
@@ -88,24 +93,20 @@ public class TimelineWorker {
 
         if (event.getType().equals(GameEventType.GAME_RESULT.toString())) {
             log.info("Preparing game result for event {}", event.getEventId());
-            String rankingKey = "event:" + event.getEventId() + ":ranking";
-            Set<Object> result = redisTemplate.opsForSet().members(rankingKey);
-            List<UserScoreData> data = new ArrayList<>();
-            if (!CollectionUtils.isEmpty(result)) {
-                data = result.stream()
-                        .map(r -> {
-                            if (r instanceof UserScoreData usd) {
-                                return usd;
-                            }
-                            return null;
-                        })
-                        .filter(Objects::nonNull)
+            String snapshotKey = "event:" + event.getEventId() + ":ranking:snapshot";
+
+            List<Object> rawData = redisTemplate.opsForList().range(snapshotKey, 0, -1);
+            if (!CollectionUtils.isEmpty(rawData)) {
+                List<UserScoreData> result = rawData.stream()
+                        .filter(o -> o instanceof UserScoreData)
+                        .map(o -> (UserScoreData) o)
                         .toList();
+                log.info("Game result size {}", result.size());
+                kafkaEvent.put("payload", result);
             }
-            kafkaEvent.put("payload", data);
 
             String playerVoucherKey = "event:" + event.getEventId() + ":playerVouchers";
-            Set<Object> pvResult = redisTemplate.opsForSet().members(playerVoucherKey);
+            List<Object> pvResult = redisTemplate.opsForList().range(playerVoucherKey, 0, -1);
             List<PlayerVoucherResponse> pvData = new ArrayList<>();
             if (!CollectionUtils.isEmpty(pvResult)) {
                 pvData = pvResult.stream()
@@ -117,12 +118,10 @@ public class TimelineWorker {
                         })
                         .filter(Objects::nonNull)
                         .toList();
+
+                log.info("Player vouchers size {}", pvData.size());
             }
             kafkaEvent.put("vouchers", pvData);
-            log.info("ranking size {}, voucher size {}",
-                    data.size(),
-                    pvData.size()
-            );
         }
 
         kafkaTemplate.send(
@@ -135,54 +134,75 @@ public class TimelineWorker {
             /// Thực hiện tính toán kết quả.
             log.info("Calculating scores for event {}", event.getEventId());
             /// Lấy toàn bộ dữ liệu trong Cache.
-            String userScoreKey = "event:" + event.getEventId() + ":scores";
-            List<Object> values = redisTemplate.opsForHash().values(userScoreKey);
-            if (!CollectionUtils.isEmpty(values)) {
-                List<UserScoreData> scoreDataList = values.stream()
-                        .map(v -> {
-                            if (v instanceof UserScoreData data) {
-                                return data;
-                            }
-                            return null;
-                        })
-                        .filter(Objects::nonNull)   /// Chỉ lấy ra các object có kiểu UserScoreData.
-                        .toList();
-
-
-                /// Sắp xếp lại danh sách theo số điểm.
-                List<UserScoreData> sortedList = scoreDataList.stream()
-                        .sorted((a, b) -> Integer.compare(b.getScore(), a.getScore()))
-                        .toList();
-
-                /// Lưu vào Redis.
-                String rankingKey = "event:" + event.getEventId() + ":ranking";
-                redisTemplate.delete(rankingKey);
-                sortedList.forEach(data -> redisTemplate.opsForSet().add(rankingKey, data));
-
-                /// Liên kết các voucher cho người thắng cuộc.
-                List<PlayerVoucherResponse> playerVouchers = new ArrayList<>();
-
-                List<VoucherResponse> vouchers = voucherService.getVouchersByCampaignId(event.getEventId());
-                List<VoucherResponse> sortedVouchers = vouchers.stream()
-                        .sorted(Comparator.comparing(VoucherResponse::getVoucherOrder).reversed())
-                        .toList();
-                for (int i = 0; i < Math.min(vouchers.size(), sortedList.size()); i++) {
-                    UserScoreData usd = sortedList.get(i);
-                    VoucherResponse vr = sortedVouchers.get(i);
-                    playerVouchers.add(playerVoucherService.assignVoucherToUser(
-                            usd, vr
-                    ));
+            String rankingKey = "event:" + event.getEventId() + ":ranking";
+            Set<ZSetOperations.TypedTuple<Object>> top =
+                    redisTemplate.opsForZSet()
+                            .reverseRangeWithScores(rankingKey, 0, -1);
+            List<UserScoreData> ranking = new ArrayList<>();
+            if (!CollectionUtils.isEmpty(top)) {
+                for (ZSetOperations.TypedTuple<Object> tuple : top) {
+                    String username = (String) tuple.getValue();
+                    int score = tuple.getScore().intValue();
+                    String playerKey = "event:" + event.getEventId() + ":username:" + username;
+                    /*
+                     * event:1:username:maivanminh   -> Hash atomic. Mỗi người chơi sẽ có riêng một key và lưu trữ các field:
+                     *   - score: điểm số hiện tại.
+                     *   - correct: số câu trả lời đúng.
+                     * */
+                    Map<Object, Object> fields = redisTemplate.opsForHash().entries(playerKey);
+                    int correct = Integer.parseInt(
+                            fields.getOrDefault("correct", 0).toString()
+                    );
+                    ranking.add(
+                            UserScoreData.builder()
+                                    .username(username)
+                                    .score(score)
+                                    .correct(correct)
+                                    .build()
+                    );
                 }
-
-                String playerVoucherKey = "event:" + event.getEventId() + ":playerVouchers";
-                redisTemplate.delete(playerVoucherKey);
-                playerVouchers.forEach(data -> redisTemplate.opsForSet().add(playerVoucherKey, data));
-            } else {
-                log.info("No score data found for event {}", event.getEventId());
-                String rankingKey = "event:" + event.getEventId() + ":ranking";
-                redisTemplate.delete(rankingKey);
-                redisTemplate.opsForSet().add(rankingKey, new ArrayList<>());
             }
+
+            /// Lưu lại vào Redis để phục vụ việc trả về kết quả sau này.
+            String snapshotKey = "event:" + event.getEventId() + ":ranking:snapshot";
+            redisTemplate.delete(snapshotKey);
+            /// Cần phải chuyển về mảng. Nếu không, lát nữa lấy lên thành List<Object> thì Object = List<UserScoreData>.
+            redisTemplate.opsForList().rightPushAll(snapshotKey, ranking.toArray());
+
+            /// Liên kết các voucher cho người thắng cuộc.
+            List<PlayerVoucherResponse> playerVouchers = new ArrayList<>();
+            List<PlayerVoucher> data = new ArrayList<>();
+
+            List<VoucherResponse> vouchers = voucherService.getVouchersByCampaignId(event.getEventId());
+            List<VoucherResponse> sortedVouchers = vouchers.stream()
+                    .sorted(Comparator.comparingInt(VoucherResponse::getVoucherOrder))
+                    .toList();
+            for (int i = 0; i < Math.min(vouchers.size(), ranking.size()); i++) {
+                UserScoreData usd = ranking.get(i);
+                VoucherResponse vr = sortedVouchers.get(i);
+                data.add(
+                        PlayerVoucher.builder()
+                                .id(AppUtils.generateUUIDv7())
+                                .voucherId(vr.getId())
+                                .campaignId(vr.getCampaignId())
+                                .code(vr.getCode())
+                                .redeemedAt(Instant.now())
+                                .used(Boolean.FALSE)
+                                .username(usd.getUsername())
+                                .discountPercentage(vr.getDiscountPercentage())
+                                .value(vr.getValue())
+                                .maxValue(vr.getMaxValue())
+                                .build()
+                );
+            }
+            /// Lưu vào DB.
+            if (!data.isEmpty()) {
+                playerVouchers = playerVoucherService.assignVoucherToUserBatch(data);
+            }
+
+            String playerVoucherKey = "event:" + event.getEventId() + ":playerVouchers";
+            redisTemplate.delete(playerVoucherKey);
+            redisTemplate.opsForList().rightPushAll(playerVoucherKey, playerVouchers.toArray());
         }
     }
 

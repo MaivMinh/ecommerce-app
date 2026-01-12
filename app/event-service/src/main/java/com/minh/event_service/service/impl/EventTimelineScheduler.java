@@ -53,19 +53,19 @@ public class EventTimelineScheduler {
                     .build());
 
             answers.add(Answer.builder()
-                    .answerId(1L)
+                    .answerId(2L)
                     .answerText(question.getOptionB())
                     .correct(question.getCorrectOption().equals(question.getOptionB()) ? Boolean.TRUE: Boolean.FALSE)
                     .build());
 
             answers.add(Answer.builder()
-                    .answerId(1L)
+                    .answerId(3L)
                     .answerText(question.getOptionC())
                     .correct(question.getCorrectOption().equals(question.getOptionC()) ? Boolean.TRUE: Boolean.FALSE)
                     .build());
 
             answers.add(Answer.builder()
-                    .answerId(1L)
+                    .answerId(4L)
                     .answerText(question.getOptionD())
                     .correct(question.getCorrectOption().equals(question.getOptionD()) ? Boolean.TRUE: Boolean.FALSE)
                     .build());
@@ -95,15 +95,15 @@ public class EventTimelineScheduler {
         addEvent(
                 GameEventType.GAME_RESULT,
                 campaignId,
-                start + totalQuestions * 3000L + 30000,
+                start + totalQuestions * 3000L + 10000L,
                 null
         );
 
-        /// Cleanup all information related to this campaign after 10 minutes of game end.
+        /// Cleanup all information related to this campaign after 20 seconds of game end.
         addEvent(
                 GameEventType.CLEANUP,
                 campaignId,
-                start + totalQuestions * 3000L + 10 * 60 * 1000L,
+                start + totalQuestions * 3000L + 20000L,
                 null
         );
     }

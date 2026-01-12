@@ -14,6 +14,7 @@ public class RealtimeEvent {
     private Long executeAt;
     private JsonNode payload;
     private JsonNode vouchers;
+    private Integer participants;
 
     @Override
     public String toString() {
@@ -22,6 +23,7 @@ public class RealtimeEvent {
                 ", eventId='" + eventId + '\'' +
                 ", executeAt=" + executeAt +
                 ", payload=" + payload +
+                ", vouchers=" + vouchers +
                 '}';
     }
 }

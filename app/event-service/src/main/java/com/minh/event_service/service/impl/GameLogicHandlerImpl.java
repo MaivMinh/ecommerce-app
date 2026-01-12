@@ -4,11 +4,13 @@ import com.minh.event_service.DTO.UserScoreData;
 import com.minh.event_service.DTO.WsMessage;
 import com.minh.event_service.service.GameLogicHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GameLogicHandlerImpl implements GameLogicHandler {
@@ -16,29 +18,17 @@ public class GameLogicHandlerImpl implements GameLogicHandler {
 
     @Override
     public void handlePlayAnswer(WsMessage event) {
-        String userScoreKey = "event:" + event.getEventId() + ":scores";
-        String username = event.getUsername();
-        int score = event.getIsCorrect() ? 10 : 0;
+        if (Objects.isNull(event) || Objects.isNull(event.getIsCorrect()) || !event.getIsCorrect())     return;
+        log.info("Handling play answer for event: {}", event);
 
+        String playerKey = "event:" + event.getEventId() + ":username:" + event.getUsername();  /// Hash Atomic.
+        String rankingKey = "event:" + event.getEventId() + ":ranking";    /// Sorted Set.
 
-        UserScoreData userData = (UserScoreData) redisTemplate.opsForHash().get(userScoreKey, username);
-        if (Objects.isNull(userData)) {
-            userData = UserScoreData.builder()
-                    .username(username)
-                    .score(score)
-                    .correct(event.getIsCorrect() ? 1 : 0)
-                    .build();
-        } else {
-            int currentScore = userData.getScore();
-            int currentCorrect = userData.getCorrect();
-            userData = UserScoreData.builder()
-                    .username(username)
-                    .score(currentScore + score)
-                    .correct(currentCorrect + (event.getIsCorrect() ? 1 : 0))
-                    .build();
-        }
-        redisTemplate.opsForHash().put(userScoreKey, username, userData);
+        /// 1. Update score & correct. Hash Atomic.
+        redisTemplate.opsForHash().increment(playerKey,"score", 10);
+        redisTemplate.opsForHash().increment(playerKey,"correct", 1);
+
+        /// 2. Update ranking. Sorted Set.
+        redisTemplate.opsForZSet().incrementScore(rankingKey,event.getUsername(),10);
     }
-
-
 }

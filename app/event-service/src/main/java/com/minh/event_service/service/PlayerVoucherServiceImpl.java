@@ -9,8 +9,10 @@ import com.minh.event_service.repository.PlayerVoucherRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +30,20 @@ public class PlayerVoucherServiceImpl implements PlayerVoucherService {
                 .redeemedAt(Instant.now())
                 .used(Boolean.FALSE)
                 .username(usd.getUsername())
+                .discountPercentage(vr.getDiscountPercentage())
+                .value(vr.getValue())
+                .maxValue(vr.getMaxValue())
                 .build();
 
         return modelMapper.map(playerVoucherRepository.save(entity), PlayerVoucherResponse.class);
+    }
+
+    @Override
+    public List<PlayerVoucherResponse> assignVoucherToUserBatch(List<PlayerVoucher> data) {
+        if (CollectionUtils.isEmpty(data)) return List.of();
+        List<PlayerVoucher> savedEntities = playerVoucherRepository.saveAll(data);
+        return savedEntities.stream()
+                .map(entity -> modelMapper.map(entity, PlayerVoucherResponse.class))
+                .toList();
     }
 }
