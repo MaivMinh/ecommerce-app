@@ -49,7 +49,7 @@ public class GameWebsocketHandler implements WebSocketHandler {
             log.info("✅ Welcome message sent successfully");
 
             /// Emit event to Kafka that user has connected.
-            Integer participants = this.updateParticipationCount();
+            Integer participants = this.updateParticipationCount(Boolean.TRUE);
             RealtimeEvent event = RealtimeEvent.builder()
                     .type("PLAYER_PARTICIPATED")
                     .eventId("")
@@ -65,8 +65,6 @@ public class GameWebsocketHandler implements WebSocketHandler {
                     "event.player.participate",
                     objectMapper.writeValueAsString(event)
             );
-
-
         } catch (Exception e) {
             log.error("❌ Error sending welcome message", e);
         }
@@ -76,14 +74,18 @@ public class GameWebsocketHandler implements WebSocketHandler {
         Hàm thực hiện cập nhật số lượng participants tham gia vào Event hiện tại.
         Hàm này sẽ gửi một sự kiện đến Kafka để cập nhật số lượng người chơi tham gia.
      */
-    private Integer updateParticipationCount() {
+    private Integer updateParticipationCount(Boolean newConnection) {
         Integer result = null;
         String participantsKey = "event:current:participants";
         result = (Integer) redisTemplate.opsForValue().get(participantsKey);
-        if (Objects.isNull(result)) {
-            result = 1;
-        } else {
-            result += 1;
+        if (newConnection) {
+            if (Objects.isNull(result)) {
+                result = 1;
+            } else {
+                result += 1;
+            }
+        }   else if (Objects.nonNull(result)) {
+            result = Math.max(0, result - 1);
         }
         redisTemplate.opsForValue().set(participantsKey, result);
         return result;
@@ -113,6 +115,21 @@ public class GameWebsocketHandler implements WebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus closeStatus) throws Exception {
         log.info("WebSocket connection closed. Session ID: {}, Close Status: {}", session.getId(), closeStatus);
         registry.removeSession(session);
+        Integer participants = this.updateParticipationCount(Boolean.FALSE);
+        RealtimeEvent event = RealtimeEvent.builder()
+                .type("PLAYER_LEFT")
+                .eventId("")
+                .executeAt(System.currentTimeMillis())
+                .payload(objectMapper.valueToTree(Map.of(
+                        "username", session.getAttributes().get("username"),
+                        "event", "PLAYER_LEFT")
+                ))
+                .participants(participants)
+                .build();
+        kafkaTemplate.send(
+                "event.player.left",
+                objectMapper.writeValueAsString(event)
+        );
     }
 
     @Override

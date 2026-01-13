@@ -13,7 +13,9 @@ import com.minh.event_service.service.PlayerVoucherService;
 import com.minh.event_service.service.VoucherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -74,13 +76,13 @@ public class TimelineWorker {
             String scoreKey = "event:" + event.getEventId() + ":scores";
             String playerVoucherKey = "event:" + event.getEventId() + ":playerVouchers";
             String participantsKey = "event:current:participants";
-
             redisTemplate.delete(scoreKey);
             redisTemplate.delete(playerVoucherKey);
             redisTemplate.delete(participantsKey);
             redisTemplate.delete("event:" + event.getEventId() + ":ranking:snapshot");
-            redisTemplate.delete("event:" + event.getEventId() + ":username:*");
-
+            deleteByPattern("event:" + event.getEventId() + ":username:*");
+            deleteByPattern("event:attendance:" + event.getEventId() + ":user:*");
+            redisTemplate.delete("event:" + event.getEventId() + ":ranking");
             log.info("Cleaned up Redis data for event {}", event.getEventId());
             return;
         }
@@ -217,4 +219,28 @@ public class TimelineWorker {
         String key = LOCK_PREFIX + DigestUtils.md5DigestAsHex(raw.getBytes());
         redisTemplate.delete(key);
     }
+
+    public void deleteByPattern(String pattern) {
+        ScanOptions options = ScanOptions.scanOptions()
+                .match(pattern)
+                .count(1000)
+                .build();
+
+        Cursor<byte[]> cursor = redisTemplate
+                .getConnectionFactory()
+                .getConnection()
+                .scan(options);
+
+        List<byte[]> keys = new ArrayList<>();
+        cursor.forEachRemaining(keys::add);
+
+        if (!keys.isEmpty()) {
+            redisTemplate.delete(
+                    keys.stream()
+                            .map(String::new)
+                            .toList()
+            );
+        }
+    }
+
 }

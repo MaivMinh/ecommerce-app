@@ -74,11 +74,12 @@ public class EventTimelineScheduler {
             addEvent(
                     GameEventType.QUESTION,
                     campaignId,
-                    start + i * 3000L,
+                    start + i * 10000L,
                     Map.of("index", i,
                             "question", questions.get(i),
                             "answers", answers,
-                            "timeLimit", 3
+                            "timeLimit", 10,
+                            "score",questions.get(i).getScore()
                     )
             );
         }
@@ -87,7 +88,7 @@ public class EventTimelineScheduler {
         addEvent(
                 GameEventType.SCORING,
                 campaignId,
-                start + totalQuestions * 3000L,
+                start + totalQuestions * 10000L,
                 Map.of("seconds", GameEventType.SCORING.getValue(), "description", GameEventType.SCORING.getDescription())
         );
 
@@ -95,7 +96,7 @@ public class EventTimelineScheduler {
         addEvent(
                 GameEventType.GAME_RESULT,
                 campaignId,
-                start + totalQuestions * 3000L + 10000L,
+                start + totalQuestions * 10000L + 10000L,
                 null
         );
 
@@ -103,7 +104,7 @@ public class EventTimelineScheduler {
         addEvent(
                 GameEventType.CLEANUP,
                 campaignId,
-                start + totalQuestions * 3000L + 20000L,
+                start + totalQuestions * 10000L + 20000L,
                 null
         );
     }

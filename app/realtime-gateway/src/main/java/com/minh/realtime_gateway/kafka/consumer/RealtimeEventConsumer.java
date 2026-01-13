@@ -20,7 +20,7 @@ public class RealtimeEventConsumer {
     private final SessionRegistry sessionRegistry;
 
     @KafkaListener(
-            topics = {"event.realtime", "event.player.participate"},
+            topics = {"event.realtime", "event.player.participate", "event.player.left"},
             groupId = "realtime-gateway"
     )
     public void consume(String message) {

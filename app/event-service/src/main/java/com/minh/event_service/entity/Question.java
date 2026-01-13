@@ -27,4 +27,6 @@ public class Question extends BaseEntity {
     private String optionD;
     @Column(name = "correct_option")
     private String correctOption;
+    @Column(name = "score")
+    private Integer score;
 }
