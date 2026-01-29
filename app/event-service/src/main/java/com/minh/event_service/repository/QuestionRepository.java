@@ -23,4 +23,12 @@ public interface QuestionRepository extends JpaRepository<Question, String> {
             delete from Question q where q.collectionId = :id
             """)
     void deleteAllByCollectionId(@Param("id") String id);
+
+    @Query(value = """
+            select  q.*
+            from questions q join question_collections  qc on q.collection_id = qc.id
+            join campaigns c on c.question_collection_id = qc.id
+            where c.id = :campaignId
+            """, nativeQuery = true)
+    List<Question> findAllQuestionsRelatedToCampaignId(@Param("campaignId") String campaignId);
 }

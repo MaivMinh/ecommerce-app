@@ -1,5 +1,5 @@
 server:
-  port: 8087
+  port: 8089
 
 spring:
   application:
@@ -24,6 +24,10 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_game}
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:49@Da5J,[KsemDN}
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   messages:
     basename: i18n/messages
     encoding: UTF-8

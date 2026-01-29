@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class SupportGrpcClient {
     @Autowired
-    private SupportServiceGrpc.SupportServiceBlockingStub supportServiceBlockingStub;
+    private SupportServiceGrpc.SupportServiceBlockingStub supportServiceBlockingStub;   /// Phải thực hiện ta Bean trong gRPC Config.
     @Autowired
     private TimeLimiter supportServiceTimeLimiter;
 

@@ -19,6 +19,7 @@ public class OrderCreatedEvent {
     private Double total;
     private String paymentMethodId;
     private String promotionId;
+    private String voucherId;
     private String currency;
     private String note;
     private List<OrderItemCreateDto> orderItemDtos;

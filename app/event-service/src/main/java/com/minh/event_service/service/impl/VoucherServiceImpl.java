@@ -18,6 +18,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -128,6 +129,7 @@ public class VoucherServiceImpl implements VoucherService {
                 .map(updateVoucherRequest -> {
                     Voucher voucher = new Voucher();
                     modelMapper.map(updateVoucherRequest, voucher);
+                    voucher.setId(updateVoucherRequest.getId());
                     return voucher;
                 })
                 .toList();
@@ -138,5 +140,26 @@ public class VoucherServiceImpl implements VoucherService {
     @Override
     public void deleteVouchersByCampaignId(String id) {
         voucherRepository.deleteVouchersByCampaignId(id);
+    }
+
+    @Override
+    public ResponseData redeemVoucher(String username) {
+        if (!StringUtils.hasText(username)) {
+            return ResponseData.builder()
+                    .status(400)
+                    .message(messageCommon.getMessage(ErrorCode.INVALID_REQUEST))
+                    .data(null)
+                    .build();
+        }
+
+        List<Voucher> redeemedVouchers = voucherRepository.getVouchersByUsername(username);
+        List<VoucherResponse> voucherResponses = redeemedVouchers.stream()
+                .map(voucher -> modelMapper.map(voucher, VoucherResponse.class))
+                .toList();
+        return ResponseData.builder()
+                .status(200)
+                .message(ResponseMessages.SUCCESS)
+                .data(voucherResponses)
+                .build();
     }
 }

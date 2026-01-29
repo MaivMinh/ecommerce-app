@@ -1,0 +1,83 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: realtime-gateway
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  # /// MYSQL DATABASE CONFIGURATION ///
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_order}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:49@Da5J,[KsemDN}
+  threads:
+    virtual:
+      enabled: true
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        resilience4j:
+          circuitbreaker:
+            enabled: true
+        http:
+          server:
+            requests:
+              enabled: true
+
+#Eureka client config.
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+      preferIpAddress: true
+    register-with-eureka: true
+    fetch-registry: true
+
+axon:
+  axonserver:
+    enabled: false
+
+logging:
+  level:
+    net.devh.boot.grpc.server: DEBUG
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000
+      repositories:
+        enabled: false

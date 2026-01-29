@@ -1,7 +1,6 @@
 package com.minh.order_service.grpc.client;
 
 import io.github.resilience4j.timelimiter.TimeLimiter;
-import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import payment_service.GetPaymentStatusRequest;

@@ -95,6 +95,12 @@ spring:
               args:
                 name: gameService
                 fallbackUri: "forward:/events/contact-support"
+        - id: ws-event
+          uri: lb:ws://realtime-gateway
+          predicates:
+            - Path=/ws/events/**,/ws/events,/events/**,/events
+          filters:
+            - StripPrefix=0
       httpclient:
         connect-timeout: 10000
         response-timeout: 20s

@@ -1,5 +1,6 @@
 package com.minh.order_service.config;
 
+import game_service.SupportServiceGrpc;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import io.grpc.ManagedChannelBuilder;
@@ -36,12 +37,12 @@ public class GrpcClientConfig {
         String address = env.getProperty("PRODUCT_GRPC_SERVER", "localhost:9091");  /// Nếu sử dụng các version grpc cũ hơn thì loại bỏ static phía trước.
         return ProductServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget(address).usePlaintext().keepAliveWithoutCalls(true).build());
     }
-//
-//    @Bean
-//    public SupportServiceGrpc.SupportServiceBlockingStub supportServiceBlockingStub() {
-//        String address = env.getProperty("SUPPORT_GRPC_SERVER", "localhost:9096");
-//        return SupportServiceGrpc.newBlockingStub(io.grpc.ManagedChannelBuilder.forTarget(address).keepAliveWithoutCalls(true).usePlaintext().build());
-//    }
+
+    @Bean
+    public SupportServiceGrpc.SupportServiceBlockingStub supportServiceBlockingStub() {
+        String address = env.getProperty("SUPPORT_GRPC_SERVER", "localhost:9096");
+        return SupportServiceGrpc.newBlockingStub(io.grpc.ManagedChannelBuilder.forTarget(address).keepAliveWithoutCalls(true).usePlaintext().build());
+    }
 
     @Bean
     public PaymentServiceGrpc.PaymentServiceBlockingStub paymentServiceBlockingStub() {

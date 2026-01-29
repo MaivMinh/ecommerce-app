@@ -6,12 +6,14 @@ import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
 import com.minh.event_service.entity.Campaign;
+import com.minh.event_service.enums.GameEventType;
 import com.minh.event_service.payload.request.*;
 import com.minh.event_service.payload.response.*;
 import com.minh.event_service.repository.CampaignImageRepository;
 import com.minh.event_service.repository.CampaignRepository;
 import com.minh.event_service.service.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,11 +22,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CampaignServiceImpl implements CampaignService {
@@ -37,6 +41,8 @@ public class CampaignServiceImpl implements CampaignService {
     private final VoucherService voucherService;
     private final CampaignImageService campaignImageService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final CampaignImageRepository campaignImageRepository;
+    private final EventTimelineScheduler eventTimelineScheduler;
 
     @Override
     @Transactional
@@ -58,7 +64,10 @@ public class CampaignServiceImpl implements CampaignService {
 
         /// Thực hiện lưu ảnh cho campaign.
         campaignImageService.saveCampaignImagesBatch(request.getImageUrls(), saved.getId());
+
+        eventTimelineScheduler.scheduleCampaign(saved);
     }
+
 
     @Override
     public ResponseData searchCampaigns(SearchCampaignsRequest request) {
@@ -219,8 +228,14 @@ public class CampaignServiceImpl implements CampaignService {
         }
         campaignImageService.saveCampaignImagesBatch(newImageUrls, request.getId());
 
+        Instant reqStartTime = request.getStartTime();
+        Instant savedStartTime = saved.getStartTime();
         modelMapper.map(request, saved);
         campaignRepository.save(saved);
+
+        if (reqStartTime.compareTo(savedStartTime) != 0 && reqStartTime.isAfter(Instant.now())) {
+            eventTimelineScheduler.scheduleCampaign(saved);
+        }
     }
 
     @Override
