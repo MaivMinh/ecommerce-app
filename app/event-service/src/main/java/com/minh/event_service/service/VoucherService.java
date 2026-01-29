@@ -32,4 +32,11 @@ public interface VoucherService {
     void saveAllUpdatedVouchers(List<UpdateVoucherRequest> updatedVouchers);
 
     void deleteVouchersByCampaignId(String id);
+
+    /**
+     * Danh sách các voucher mà người dùng đã thu thập được.
+     * @param username: Tên đăng nhập của người dùng.
+     * @return: Danh sách các voucher của người dùng.
+     */
+    ResponseData redeemVoucher(String username);
 }

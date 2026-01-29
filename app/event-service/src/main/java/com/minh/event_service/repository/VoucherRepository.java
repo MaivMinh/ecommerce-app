@@ -34,4 +34,12 @@ public interface VoucherRepository extends JpaRepository<Voucher, String> {
             delete from Voucher v where v.campaignId = :id
             """)
     void deleteVouchersByCampaignId(@Param("id") String id);
+
+    @Query(value = """
+            select v from Voucher v join PlayerVoucher pv on v.id = pv.voucherId
+            where pv.username LIKE :username
+                and pv.used = false\s
+                and (COALESCE(v.expirationDate, NULL) IS NULL OR v.expirationDate >= CURRENT_DATE)
+           \s""", nativeQuery = false)
+    List<Voucher> getVouchersByUsername(@Param("username") String username);
 }

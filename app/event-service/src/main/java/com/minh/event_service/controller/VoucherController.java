@@ -68,4 +68,10 @@ public class VoucherController {
                 .build()
         );
     }
+
+    @GetMapping(value = "/{username}/redeem")
+    public ResponseEntity<ResponseData> redeemVoucher(@PathVariable("username") String username) {
+        ResponseData response = voucherService.redeemVoucher(username);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }

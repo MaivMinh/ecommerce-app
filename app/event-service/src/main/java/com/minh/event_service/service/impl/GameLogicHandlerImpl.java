@@ -1,6 +1,5 @@
 package com.minh.event_service.service.impl;
 
-import com.minh.event_service.DTO.UserScoreData;
 import com.minh.event_service.DTO.WsMessage;
 import com.minh.event_service.service.GameLogicHandler;
 import lombok.RequiredArgsConstructor;

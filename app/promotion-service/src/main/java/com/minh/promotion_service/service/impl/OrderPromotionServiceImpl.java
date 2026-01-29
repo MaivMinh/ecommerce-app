@@ -63,7 +63,6 @@ public class OrderPromotionServiceImpl implements OrderPromotionService {
         /// Decrease usage count of this promotion.
         promotion.setUsageCount(promotion.getUsageCount() - 1);
         promotionService.updatePromotion(promotion);
-        throw new RuntimeException();
     }
 
     @Override
