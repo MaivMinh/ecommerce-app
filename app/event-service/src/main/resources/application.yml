@@ -78,6 +78,12 @@ cloudinary:
     key: 617116739785479
     secret: l43AgCl03cV8V008w_FRC2U79zM
 
+minio:
+  endpoint: http://localhost:9000
+  access-key: ecommerce_user
+  secret-key: minh2000
+  bucket: ecommerce
+
 axon:
   axonserver:
     enabled: false
