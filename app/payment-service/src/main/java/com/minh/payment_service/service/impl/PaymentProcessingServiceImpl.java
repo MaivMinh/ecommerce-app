@@ -6,11 +6,13 @@ import com.minh.common.events.PaymentProcessedRollbackEvent;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.utils.AppUtils;
 import com.minh.payment_service.enums.PaymentStatus;
+import com.minh.payment_service.payload.request.PaymentRequest;
 import com.minh.payment_service.query.DTOs.PaymentMethodDto;
 import com.minh.payment_service.query.entity.Payment;
 import com.minh.payment_service.repository.PaymentRepository;
 import com.minh.payment_service.service.PaymentMethodService;
 import com.minh.payment_service.service.PaymentProcessingService;
+import com.minh.payment_service.service.PaymentStrategy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,30 +20,17 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PaymentProcessingServiceImpl implements PaymentProcessingService {
     private final PaymentRepository paymentRepository;
-    private final PaymentMethodService paymentMethodService;
     private final MessageCommon messageCommon;
+    private PaymentStrategy paymentStrategy;
+
+    @Override
+    public void setPaymentStrategy(PaymentStrategy paymentStrategy) {
+        this.paymentStrategy = paymentStrategy;
+    }
 
     @Override
     public void processPayment(PaymentProcessedEvent event) {
-        try {
-            PaymentMethodDto method = paymentMethodService.findById(event.getPaymentMethodId());
-            if (method == null) {
-                throw new RuntimeException(messageCommon.getMessage(ErrorCode.PaymentMethod.NOT_FOUND, event.getPaymentMethodId()));
-            }
-
-            Payment payment = new Payment();
-            payment.setId(event.getPaymentId());
-            payment.setOrderId(event.getOrderId());
-            payment.setTotal(event.getTotal());
-            payment.setPaymentMethodId(event.getPaymentMethodId());
-            payment.setStatus(PaymentStatus.COMPLETED);
-            payment.setCurrency(event.getCurrency());
-            payment.setTransactionId(AppUtils.generateUUIDv7());
-            paymentRepository.save(payment);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.PAYMENT_FAILED, event.getPaymentId()));
-        }
+        paymentStrategy.pay(event);
     }
 
     @Override

@@ -16,7 +16,7 @@ public class ProcessPaymentCommand {
     private String reserveProductId;
     private Double total;
     private String currency;
-    private String paymentMethodId;
+    private String paymentMethod;
     private String username;
     private String productId;
 }

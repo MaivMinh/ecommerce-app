@@ -109,4 +109,13 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
         }
         return modelMapper.map(method, PaymentMethodDto.class);
     }
+
+    @Override
+    public PaymentMethodDto findByCode(String paymentMethod) {
+        PaymentMethod method = paymentMethodRepository.findByCode(paymentMethod);
+        if (Objects.isNull(method)) {
+            return null;
+        }
+        return modelMapper.map(method, PaymentMethodDto.class);
+    }
 }

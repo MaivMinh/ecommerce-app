@@ -13,7 +13,7 @@ public class CreateOrderRequest {
     private Double subTotal;
     private Double discount;
     private Double total;
-    private String paymentMethodId;
+    private String paymentMethod;
     private String promotionId;
     private String currency;
     private String note;

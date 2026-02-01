@@ -46,7 +46,7 @@ public class OrderCommandController {
                 .total(request.getTotal())
                 .subTotal(request.getSubTotal())
                 .note(request.getNote())
-                .paymentMethodId(request.getPaymentMethodId())
+                .paymentMethod(request.getPaymentMethod())
                 .orderItemDtos(request.getOrderItemDtos())
                 .promotionId(request.getPromotionId())
                 .orderItemDtos(request.getOrderItemDtos())

@@ -22,7 +22,7 @@ public class OrderPromotionAggregate {
     private String reserveProductId;
     private String orderId;
     private String promotionId;
-    private String paymentMethodId;
+    private String paymentMethod;
     private Double amount;
     private String currency;
     private String errorMsg;
@@ -46,7 +46,7 @@ public class OrderPromotionAggregate {
         this.reserveProductId = event.getReserveProductId();
         this.orderId = event.getOrderId();
         this.promotionId = event.getPromotionId();
-        this.paymentMethodId = event.getPaymentMethodId();
+        this.paymentMethod = event.getPaymentMethod();
         this.amount = event.getTotal();
         this.currency = event.getCurrency();
     }

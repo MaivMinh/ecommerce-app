@@ -1,21 +1,20 @@
-package com.minh.common.events;
+package com.minh.payment_service.payload.request;
 
 import lombok.*;
-import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PaymentProcessedEvent {
+public class PaymentRequest {
     private String paymentId;
     private String orderId;
     private String orderPromotionId;
     private String reserveProductId;
     private Double total;
     private String currency;
-    private String paymentMethod;
+    private String paymentMethodId;
     private String username;
     private String productId;
     private String errorMsg;

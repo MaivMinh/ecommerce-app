@@ -7,4 +7,6 @@ public interface PaymentProcessingService {
     void processPayment(PaymentProcessedEvent event);
 
     void rollbackProcessedPayment(PaymentProcessedRollbackEvent event);
+
+    void setPaymentStrategy(PaymentStrategy paymentStrategy);
 }

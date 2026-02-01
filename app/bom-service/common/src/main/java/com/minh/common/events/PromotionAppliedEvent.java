@@ -12,7 +12,7 @@ public class PromotionAppliedEvent {
     private String reserveProductId;
     private String orderId;
     private String promotionId;
-    private String paymentMethodId;
+    private String paymentMethod;
     private Double total;
     private String currency;
     private String username;

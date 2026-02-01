@@ -95,7 +95,7 @@ minio:
 
 file:
   storage:
-    provider: MINIO
+    provider: CLOUDINARY
 
 axon:
   axonserver:

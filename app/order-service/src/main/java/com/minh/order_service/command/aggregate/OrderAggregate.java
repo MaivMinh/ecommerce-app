@@ -39,7 +39,7 @@ public class OrderAggregate {
     private Double total;
     private Double subTotal;
     private String note;
-    private String paymentMethodId;
+    private String paymentMethod;
     private String promotionId;
     private String errMsg;
     private String productId;
@@ -65,7 +65,7 @@ public class OrderAggregate {
         this.total = event.getTotal();
         this.subTotal = event.getSubTotal();
         this.note = event.getNote();
-        this.paymentMethodId = event.getPaymentMethodId();
+        this.paymentMethod = event.getPaymentMethod();
         this.promotionId = event.getPromotionId();
         this.errMsg = null;
     }

@@ -23,4 +23,6 @@ public interface PaymentMethodService {
     void deletePaymentMethod(PaymentMethodDeletedEvent event);
 
     PaymentMethodDto findById(String paymentMethodId);
+
+    PaymentMethodDto findByCode(String paymentMethod);
 }

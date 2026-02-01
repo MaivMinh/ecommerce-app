@@ -24,7 +24,7 @@ public class PaymentProcessingAggregate {
     private String reserveProductId;
     private Double total;
     private String currency;
-    private String paymentMethodId;
+    private String paymentMethod;
     private String username;
     private String errorMsg;
 
@@ -46,7 +46,7 @@ public class PaymentProcessingAggregate {
         this.reserveProductId = event.getReserveProductId();
         this.total = event.getTotal();
         this.currency = event.getCurrency();
-        this.paymentMethodId = event.getPaymentMethodId();
+        this.paymentMethod = event.getPaymentMethod();
         this.errorMsg = null;
     }
 

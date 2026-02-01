@@ -17,7 +17,7 @@ public class OrderCreatedEvent {
     private Double subTotal;
     private Double discount;
     private Double total;
-    private String paymentMethodId;
+    private String paymentMethod;
     private String promotionId;
     private String voucherId;
     private String currency;
