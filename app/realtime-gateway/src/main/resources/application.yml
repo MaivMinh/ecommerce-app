@@ -27,6 +27,12 @@ spring:
     basename: i18n/messages
     encoding: UTF-8
 
+keycloak:
+  realm: e-commerce
+  credentials:
+    client-id: e-commerce-backend
+    client-secret: mGVahWP3RYwayv5jQ9LNubRfwM0oiKfH
+
 management:
   endpoint:
     health:

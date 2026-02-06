@@ -16,7 +16,7 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> {
                     request
-                            .requestMatchers("/actuator/**", "/events", "/events/**")
+                            .requestMatchers("/actuator/**")
                             .permitAll()
                             .requestMatchers(org.springframework.http.HttpMethod.GET, "/ws/events", "/ws/events/**")
                             .permitAll()

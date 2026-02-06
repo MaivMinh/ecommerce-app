@@ -39,7 +39,6 @@ public class SecurityConfig {
                         ))
                 )
                 .csrf(ServerHttpSecurity.CsrfSpec::disable);
-
         return http.build();
     }
 
@@ -49,13 +48,6 @@ public class SecurityConfig {
         lstUrl.add("/v3/api-docs/**");
         lstUrl.add("/swagger-ui/index.html");
         lstUrl.add("/webjars/**");
-        lstUrl.add("/api/v1/recruitment/position/**");
-        lstUrl.add("/api/v1/recruitment/position-class/**");
-        lstUrl.add("/api/v1/recruitment/position-group/**");
-        lstUrl.add("/api/v1/recruitment/location/**");
-        lstUrl.add("/api/v1/recruitment/job-ad/**");
-        lstUrl.add("/api/v1/recruitment/candidate/apply");
-        lstUrl.add("/api/v1/recruitment/auth/login");
         lstUrl.add("/actuator/**");
         return lstUrl.toArray(new String[0]);
     }
