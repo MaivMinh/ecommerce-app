@@ -5,7 +5,7 @@ import com.minh.event_service.DTO.Answer;
 import com.minh.event_service.entity.Campaign;
 import com.minh.event_service.entity.Question;
 import com.minh.event_service.entity.TimelineEvent;
-import com.minh.event_service.enums.GameEventType;
+import com.minh.common.enums.GameEventType;
 import com.minh.event_service.repository.CampaignRepository;
 import com.minh.event_service.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;

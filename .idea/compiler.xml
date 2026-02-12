@@ -9,6 +9,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="common-service" />
         <module name="payment-service" />
+        <module name="realtime-gateway" />
         <module name="event-service" />
         <module name="support-service" />
         <module name="promotion-service" />
@@ -17,15 +18,6 @@
         <module name="order-service" />
         <module name="notify-service" />
         <module name="service-discovery" />
-      </profile>
-      <profile name="Annotation profile for realtime-gateway" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
-        </processorPath>
-        <module name="realtime-gateway" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

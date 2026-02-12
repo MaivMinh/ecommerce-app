@@ -48,6 +48,7 @@
         <module>../api-gateway</module>
         <module>../service-discovery</module>
         <module>../event-service</module>
+        <module>../realtime-gateway</module>
     </modules>
     <dependencies>
     </dependencies>

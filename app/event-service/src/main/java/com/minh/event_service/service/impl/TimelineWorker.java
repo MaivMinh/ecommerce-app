@@ -5,10 +5,11 @@ import com.minh.common.utils.AppUtils;
 import com.minh.event_service.DTO.UserScoreData;
 import com.minh.event_service.entity.PlayerVoucher;
 import com.minh.event_service.entity.TimelineEvent;
-import com.minh.event_service.enums.GameEventType;
+import com.minh.common.enums.GameEventType;
 import com.minh.event_service.payload.response.PlayerVoucherResponse;
 import com.minh.event_service.payload.response.VoucherResponse;
 import com.minh.event_service.repository.VoucherRepository;
+import com.minh.event_service.service.GameLogicHandler;
 import com.minh.event_service.service.PlayerVoucherService;
 import com.minh.event_service.service.VoucherService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class TimelineWorker {
     private final VoucherRepository voucherRepository;
     private final VoucherService voucherService;
     private final PlayerVoucherService playerVoucherService;
+    private final GameLogicHandler gameLogicHandler;
 
     @Scheduled(fixedDelay = 1000)
     public void poll() {
@@ -84,6 +86,9 @@ public class TimelineWorker {
             deleteByPattern("event:attendance:" + event.getEventId() + ":user:*");
             redisTemplate.delete("event:" + event.getEventId() + ":ranking");
             log.info("Cleaned up Redis data for event {}", event.getEventId());
+
+            /// Xóa Observer.
+            gameLogicHandler.cleanupMilestoneData(event.getEventId());
             return;
         }
 
@@ -169,7 +174,10 @@ public class TimelineWorker {
             String snapshotKey = "event:" + event.getEventId() + ":ranking:snapshot";
             redisTemplate.delete(snapshotKey);
             /// Cần phải chuyển về mảng. Nếu không, lát nữa lấy lên thành List<Object> thì Object = List<UserScoreData>.
-            redisTemplate.opsForList().rightPushAll(snapshotKey, ranking.toArray());
+            if (!CollectionUtils.isEmpty(ranking)) {
+                redisTemplate.opsForList().rightPushAll(snapshotKey, ranking.toArray());
+            }
+
 
             /// Liên kết các voucher cho người thắng cuộc.
             List<PlayerVoucherResponse> playerVouchers = new ArrayList<>();
@@ -204,7 +212,9 @@ public class TimelineWorker {
 
             String playerVoucherKey = "event:" + event.getEventId() + ":playerVouchers";
             redisTemplate.delete(playerVoucherKey);
-            redisTemplate.opsForList().rightPushAll(playerVoucherKey, playerVouchers.toArray());
+            if (!CollectionUtils.isEmpty(playerVouchers)) {
+                redisTemplate.opsForList().rightPushAll(playerVoucherKey, playerVouchers.toArray());
+            }
         }
     }
 

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package net.devh.boot.grpc.example;
+option java_multiple_files = true;
+option java_outer_classname = "EventProto";
+option java_package = "event_service";
+
+service EventService {
+  rpc StreamMilestone(MilestoneRequest) returns (stream MilestoneResponse);
+}
+
+message MilestoneRequest {
+  string event_id = 1;
+}
+message MilestoneResponse {
+  string event_id = 1;
+  string milestone_code = 2;
+  string description = 3;
+  string username = 4;
+}

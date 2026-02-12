@@ -1,7 +1,9 @@
 package com.minh.realtime_gateway.kafka.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minh.common.enums.GameEventType;
 import com.minh.realtime_gateway.DTOs.RealtimeEvent;
+import com.minh.realtime_gateway.service.MilestoneService;
 import com.minh.realtime_gateway.session.SessionRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,7 @@ public class RealtimeEventConsumer {
 
     private final ObjectMapper objectMapper;
     private final SessionRegistry sessionRegistry;
+    private final MilestoneService milestoneService;
 
     @KafkaListener(
             topics = {"event.realtime", "event.player.participate", "event.player.left"},
@@ -30,6 +33,10 @@ public class RealtimeEventConsumer {
 
             log.info("Received realtime event: {}", message);
             pushToClients(event);
+
+            if (event.getType().equals(GameEventType.GAME_START.name())) {
+                milestoneService.updateMilestone(event);
+            }
 
         } catch (Exception e) {
             log.error("Consume realtime event failed", e);

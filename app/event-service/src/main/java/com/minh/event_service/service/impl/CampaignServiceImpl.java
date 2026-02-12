@@ -6,7 +6,6 @@ import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
 import com.minh.event_service.entity.Campaign;
-import com.minh.event_service.enums.GameEventType;
 import com.minh.event_service.payload.request.*;
 import com.minh.event_service.payload.response.*;
 import com.minh.event_service.repository.CampaignImageRepository;
