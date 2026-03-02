@@ -87,3 +87,16 @@ logging:
       timeout: 2000
       repositories:
         enabled: false
+
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      event-service:
+        register-health-indicator: true
+        sliding-window-size: 30
+        minimum-number-of-calls: 30
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20000
+        permitted-number-of-calls-in-half-open-state: 15
+        sliding-window-type: COUNT_BASED
