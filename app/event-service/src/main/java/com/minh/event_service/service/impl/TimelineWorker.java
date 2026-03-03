@@ -1,14 +1,13 @@
 package com.minh.event_service.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.minh.common.enums.GameEventType;
 import com.minh.common.utils.AppUtils;
 import com.minh.event_service.DTO.UserScoreData;
 import com.minh.event_service.entity.PlayerVoucher;
 import com.minh.event_service.entity.TimelineEvent;
-import com.minh.common.enums.GameEventType;
 import com.minh.event_service.payload.response.PlayerVoucherResponse;
 import com.minh.event_service.payload.response.VoucherResponse;
-import com.minh.event_service.repository.VoucherRepository;
 import com.minh.event_service.service.GameLogicHandler;
 import com.minh.event_service.service.PlayerVoucherService;
 import com.minh.event_service.service.VoucherService;
@@ -39,7 +38,6 @@ public class TimelineWorker {
     private static final String TIMELINE_KEY = "event:timeline";
     private static final String LOCK_PREFIX = "event:lock:";
     private static final int BATCH_SIZE = 20;
-    private final VoucherRepository voucherRepository;
     private final VoucherService voucherService;
     private final PlayerVoucherService playerVoucherService;
     private final GameLogicHandler gameLogicHandler;
@@ -58,6 +56,11 @@ public class TimelineWorker {
             String rawString = (String) raw;
             if (tryLock(rawString)) {   ///  Redis lock.
                 try {
+                    Double score = redisTemplate.opsForZSet().score(TIMELINE_KEY, raw); /// Kiểm tra xem event đã được xử lý bởi instance khác chưa.
+                    if (score == null) {
+                        log.info("Event already processed by another instance, skipping");
+                        continue;
+                    }
                     process(rawString);
                     redisTemplate.opsForZSet().remove(TIMELINE_KEY, raw);
                 } catch (Exception e) {
