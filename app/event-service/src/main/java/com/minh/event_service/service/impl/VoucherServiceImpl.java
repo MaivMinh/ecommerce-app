@@ -5,6 +5,7 @@ import com.minh.common.constants.ResponseMessages;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
+import com.minh.event_service.payload.response.VoucherRedeemedResponse;
 import com.minh.event_service.entity.Voucher;
 import com.minh.event_service.payload.request.CreateVoucherRequest;
 import com.minh.event_service.payload.request.SearchVouchersRequest;
@@ -20,7 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -153,13 +157,28 @@ public class VoucherServiceImpl implements VoucherService {
         }
 
         List<Voucher> redeemedVouchers = voucherRepository.getVouchersByUsername(username);
-        List<VoucherResponse> voucherResponses = redeemedVouchers.stream()
-                .map(voucher -> modelMapper.map(voucher, VoucherResponse.class))
-                .toList();
+        List<VoucherRedeemedResponse> voucherResponse = new ArrayList<>();
+        for (Voucher voucher: redeemedVouchers) {
+            VoucherRedeemedResponse res = new VoucherRedeemedResponse();
+            res.setId(voucher.getId());
+            res.setCode(voucher.getCode());
+            if (Objects.isNull(voucher.getDiscountPercentage())) {
+                res.setType("fixed");
+                res.setDiscountValue(voucher.getValue());
+            }   else {
+                res.setType("percentage");
+                res.setDiscountValue(voucher.getDiscountPercentage());
+            }
+            res.setMaxValue(voucher.getMaxValue());
+            res.setEndDate(voucher.getExpirationDate().toString());
+            res.setStatus(Instant.now().isAfter(voucher.getExpirationDate()) ? "inactive" : "active");
+            voucherResponse.add(res);
+        }
+
         return ResponseData.builder()
                 .status(200)
                 .message(ResponseMessages.SUCCESS)
-                .data(voucherResponses)
+                .data(voucherResponse)
                 .build();
     }
 }

@@ -4,6 +4,7 @@ import com.minh.event_service.DTO.UserScoreData;
 import com.minh.event_service.entity.PlayerVoucher;
 import com.minh.event_service.payload.response.PlayerVoucherResponse;
 import com.minh.event_service.payload.response.VoucherResponse;
+import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
 

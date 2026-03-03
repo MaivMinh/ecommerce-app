@@ -111,7 +111,6 @@ public class TimelineWorker {
                         .filter(o -> o instanceof UserScoreData)
                         .map(o -> (UserScoreData) o)
                         .toList();
-                log.info("Game result size {}", result.size());
                 kafkaEvent.put("payload", result);
             }
 
@@ -128,8 +127,6 @@ public class TimelineWorker {
                         })
                         .filter(Objects::nonNull)
                         .toList();
-
-                log.info("Player vouchers size {}", pvData.size());
             }
             kafkaEvent.put("vouchers", pvData);
         }
