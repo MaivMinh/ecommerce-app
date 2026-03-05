@@ -11,6 +11,23 @@ COPY --from=builder application/dependencies/ ./
 COPY --from=builder application/spring-boot-loader/ ./
 COPY --from=builder application/snapshot-dependencies/ ./
 COPY --from=builder application/application/ ./
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
-# The JarLauncher class has been relocated to a new package since Spring Boot 3.2.0.
+
+# ==============================
+# DOWNLOAD OPENTELEMETRY AGENT
+# ==============================
+ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar /otel/opentelemetry-javaagent.jar
+
+# ==============================
+# OTEL ENV CONFIG
+# ==============================
+ENV OTEL_SERVICE_NAME=event-service
+ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+ENV OTEL_TRACES_EXPORTER=otlp
+ENV OTEL_METRICS_EXPORTER=otlp
+ENV OTEL_LOGS_EXPORTER=otlp
+
+# ==============================
+# JAVA STARTUP
+# ==============================
+ENTRYPOINT ["java", "-javaagent:/otel/opentelemetry-javaagent.jar", "org.springframework.boot.loader.launch.JarLauncher"]
 EXPOSE 8085 9095

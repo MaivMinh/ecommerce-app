@@ -30,4 +30,5 @@ ENV OTEL_LOGS_EXPORTER=otlp
 # JAVA STARTUP
 # ==============================
 ENTRYPOINT ["java", "-javaagent:/otel/opentelemetry-javaagent.jar", "org.springframework.boot.loader.launch.JarLauncher"]
-EXPOSE 8087
+
+EXPOSE 8089 9097
