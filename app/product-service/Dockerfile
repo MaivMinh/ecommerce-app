@@ -20,7 +20,7 @@ ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/release
 # ==============================
 # OTEL ENV CONFIG
 # ==============================
-ENV OTEL_SERVICE_NAME=event-service
+ENV OTEL_SERVICE_NAME=product-service
 ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 ENV OTEL_TRACES_EXPORTER=otlp
 ENV OTEL_METRICS_EXPORTER=otlp
