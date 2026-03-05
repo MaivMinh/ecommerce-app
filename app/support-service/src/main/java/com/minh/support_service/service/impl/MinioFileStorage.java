@@ -52,7 +52,7 @@ public class MinioFileStorage implements FileStorageService {
             );
 
             return UploadResult.builder()
-                    .url(url)
+                    .data(url)
                     .provider(this.MINIO)
                     .build();
 
