@@ -45,7 +45,7 @@ public class VNPayStrategy extends AbstractPaymentStrategy {
             payment.setId(request.getPaymentId());
             payment.setOrderId(request.getOrderId());
             payment.setTotal(request.getTotal());
-            payment.setPaymentMethodId(request.getPaymentMethod());
+            payment.setPaymentMethodId(method.getId());
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setCurrency(request.getCurrency());
             payment.setTransactionId(AppUtils.generateUUIDv7());

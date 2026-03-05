@@ -12,10 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -38,10 +40,7 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
         return ResponseData.builder()
                 .status(HttpStatus.CREATED.value())
                 .message("Image uploaded successfully")
-                .data(Map.of(
-                        "url", result.getData(),
-                        "provider", result.getProvider()
-                ))
+                .data(result)
                 .build();
     }
 

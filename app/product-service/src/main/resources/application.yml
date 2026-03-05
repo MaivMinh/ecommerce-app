@@ -13,17 +13,10 @@ spring:
     virtual:
       enabled: true
   # Kafka Configuration
-  cloud:
-    stream:
-      bindings: #  Destination bindings component là cầu nối và định nghĩa các kênh (channels) mà ứng dụng sẽ sử dụng để gửi hoặc nhận dữ liệu.
-        springCloudBusInput:
-          destination: springCloudBus
-        publishProductUpdatedEvent-out-0:
-          destination: product-updated-event
-      kafka:
-        binder:
-          brokers:
-            - ${KAFKA_BROKER:localhost:9092}
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
   sql:
     init:

@@ -5,9 +5,13 @@ import com.minh.common.DTOs.AuthenticatedDetails;
 import com.minh.common.DTOs.SearchDTO;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class AppUtils {
@@ -35,8 +39,18 @@ public class AppUtils {
     }
 
     public static Pageable toPageable(SearchDTO searchDTO) {
-        int page = Math.max(0, searchDTO.getPage() - 1);   // đảm bảo không âm
-        int size = Math.max(1, searchDTO.getSize());   // đảm bảo size >= 1
+        if (StringUtils.hasText(searchDTO.getSortBy())) {
+            int page = Math.max(0, searchDTO.getPage() - 1);
+            int size = Math.max(1, searchDTO.getSize());
+            List<Sort.Order> orders = new ArrayList<>();
+            String[] sortParams = searchDTO.getSortBy().split(",");
+            for (String param: sortParams) {
+                orders.add(new Sort.Order(Sort.Direction.fromString(StringUtils.hasLength(searchDTO.getSortDirection()) ? searchDTO.getSortDirection() : "ASC"), param.trim()));
+            }
+            return PageRequest.of(page, size, Sort.by(orders));
+        }
+        int page = Math.max(0, searchDTO.getPage() - 1);
+        int size = Math.max(1, searchDTO.getSize());
         return PageRequest.of(page, size);
     }
 

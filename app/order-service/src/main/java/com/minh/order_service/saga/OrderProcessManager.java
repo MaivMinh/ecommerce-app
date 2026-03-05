@@ -48,7 +48,6 @@ public class OrderProcessManager {
                 .orderId(event.getOrderId())
                 .currency(event.getCurrency())
                 .paymentMethod(event.getPaymentMethod())
-                .promotionId(event.getPromotionId())
                 .reserveProductItems(reserveProductItems)
                 .total(event.getTotal())
                 .username(event.getUsername())
@@ -70,13 +69,11 @@ public class OrderProcessManager {
     @SagaEventHandler(associationProperty = "orderId")
     public void on(ProductReservedEvent event) {
         log.info("Saga Event 2 : Received ProductReservedEvent for order id: {}", event.getOrderId());
-
-        /// Apply promotion for the order if needed.
-        ApplyPromotionCommand command = ApplyPromotionCommand.builder()
-                .orderPromotionId(AppUtils.generateUUIDv7())
+        /// Process payment.
+        ProcessPaymentCommand command = ProcessPaymentCommand.builder()
+                .paymentId(AppUtils.generateUUIDv7())
                 .reserveProductId(event.getReserveProductId())
                 .orderId(event.getOrderId())
-                .promotionId(event.getPromotionId())
                 .paymentMethod(event.getPaymentMethod())
                 .total(event.getTotal())
                 .currency(event.getCurrency())
@@ -86,7 +83,7 @@ public class OrderProcessManager {
 
         commandGateway.send(command, (commandMessage, commandResultMessage) -> {
             if (commandResultMessage.isExceptional()) {
-                log.error("Saga Event 2 [Error] : Failed to apply promotion for order id: {}, rolling back order creation.", event.getOrderId());
+                log.error("Saga Event 2 [Error] : Failed to process payment for order id: {}, rolling back product reservation.", event.getOrderId());
                 RollbackReserveProductCommand rollbackCommand = RollbackReserveProductCommand.builder()
                         .reserveProductId(event.getReserveProductId())
                         .orderId(event.getOrderId())
@@ -99,43 +96,11 @@ public class OrderProcessManager {
     }
 
     @SagaEventHandler(associationProperty = "orderId")
-    public void on(PromotionAppliedEvent event) {
-        log.info("Saga Event 3 : Received PromotionAppliedEvent for order id: {}", event.getOrderId());
-        /// Process payment.
-        ProcessPaymentCommand command = ProcessPaymentCommand.builder()
-                .paymentId(AppUtils.generateUUIDv7())
-                .orderPromotionId(event.getOrderPromotionId())
-                .reserveProductId(event.getReserveProductId())
-                .orderId(event.getOrderId())
-                .paymentMethod(event.getPaymentMethod())
-                .total(event.getTotal())
-                .currency(event.getCurrency())
-                .username(event.getUsername())
-                .productId(event.getProductId())
-                .build();
-
-        commandGateway.send(command, (commandMessage, commandResultMessage) -> {
-            if (commandResultMessage.isExceptional()) {
-                log.error("Saga Event 3 [Error] : Failed to process payment for order id: {}, rolling back order creation.", event.getOrderId());
-                RollbackApplyPromotionCommand rollbackCommand = RollbackApplyPromotionCommand.builder()
-                        .orderPromotionId(event.getOrderPromotionId())
-                        .reserveProductId(event.getReserveProductId())
-                        .orderId(event.getOrderId())
-                        .errorMsg(commandResultMessage.exceptionResult().getMessage())
-                        .username(event.getUsername())
-                        .build();
-                commandGateway.sendAndWait(rollbackCommand);
-            }
-        });
-    }
-
-    @SagaEventHandler(associationProperty = "orderId")
     public void on(PaymentProcessedEvent event) {
-        log.info("Saga Event 4 : Payment processed successfully for order id: {}", event.getOrderId());
+        log.info("Saga Event 3 : Payment processed successfully for order id: {}", event.getOrderId());
         ConfirmReservedProductCommand command = ConfirmReservedProductCommand.builder()
                 .reserveProductId(event.getReserveProductId())
                 .paymentId(event.getPaymentId())
-                .orderPromotionId(event.getOrderPromotionId())
                 .orderId(event.getOrderId())
                 .username(event.getUsername())
                 .productId(event.getProductId())
@@ -143,10 +108,9 @@ public class OrderProcessManager {
 
         commandGateway.send(command, (commandMessage, commandResultMessage) -> {
             if (commandResultMessage.isExceptional()) {
-                log.error("Saga Event 4 [Error] : Failed to confirm reserved product for payment id: {}, rolling back order creation.", event.getPaymentId());
+                log.error("Saga Event 3 [Error] : Failed to confirm reserved product for payment id: {}, rolling back order creation.", event.getPaymentId());
                 RollbackProcessPaymentCommand rollbackCommand = RollbackProcessPaymentCommand.builder()
                         .paymentId(event.getPaymentId())
-                        .orderPromotionId(event.getOrderPromotionId())
                         .reserveProductId(event.getReserveProductId())
                         .orderId(event.getOrderId())
                         .errorMsg(commandResultMessage.exceptionResult().getMessage())
@@ -158,14 +122,13 @@ public class OrderProcessManager {
 
     @SagaEventHandler(associationProperty = "orderId")
     public void on(ReserveProductConfirmedEvent event) {
-        log.info("Saga Event 5 : Reserve product confirmed for order id: {}", event.getOrderId());
+        log.info("Saga Event 4 : Reserve product confirmed for order id: {}", event.getOrderId());
         /// Xác nhận đặt chỗ sản phẩm thành công, cập nhật trạng thái đơn hàng trong order-service.
         log.info("Current username: {}", AppUtils.getUsername());
 
         ConfirmCreateOrderCommand command = ConfirmCreateOrderCommand.builder()
                 .orderId(event.getOrderId())
                 .paymentId(event.getPaymentId())
-                .orderPromotionId(event.getOrderPromotionId())
                 .reserveProductId(event.getReserveProductId())
                 .username(event.getUsername())
                 .productId(event.getProductId())
@@ -173,10 +136,9 @@ public class OrderProcessManager {
 
         commandGateway.send(command, (commandMessage, commandResultMessage) -> {
             if (commandResultMessage.isExceptional()) {
-                log.error("Saga Event 5 [Error] : Failed to confirm created order for order id: {}, rolling back payment process.", event.getOrderId());
+                log.error("Saga Event 4 [Error] : Failed to confirm created order for order id: {}, rolling back payment process.", event.getOrderId());
                 RollbackProcessPaymentCommand rollbackCommand = RollbackProcessPaymentCommand.builder()
                         .paymentId(event.getPaymentId())
-                        .orderPromotionId(event.getOrderPromotionId())
                         .reserveProductId(event.getReserveProductId())
                         .orderId(event.getOrderId())
                         .errorMsg(commandResultMessage.exceptionResult().getMessage())
@@ -189,11 +151,12 @@ public class OrderProcessManager {
     @EndSaga
     @SagaEventHandler(associationProperty = "orderId")
     public void on(CreatedOrderConfirmedEvent event) {
-        log.info("Saga Event 6 [End] : Create order confirmed for order id: {}", event.getOrderId());
+        log.info("Saga Event 5 [End] : Create order confirmed for order id: {}", event.getOrderId());
 
         Map<String, Object> data = new HashMap<>();
         data.put("orderId", event.getOrderId());
         data.put("paymentId", event.getPaymentId());
+        data.put("username", event.getUsername());
 
         queryUpdateEmitter.emit(FindOverallOrderStatusQuery.class,
                 query -> true,
@@ -209,22 +172,6 @@ public class OrderProcessManager {
     @SagaEventHandler(associationProperty = "orderId")
     public void on(PaymentProcessedRollbackEvent event) {
         log.info("Saga Event Rollback [1] : Received PaymentProcessedRollbackEvent for order id: {}", event.getOrderId());
-
-        /// Rollback the applied promotion command.
-        RollbackApplyPromotionCommand rollbackCommand = RollbackApplyPromotionCommand.builder()
-                .orderPromotionId(event.getOrderPromotionId())
-                .reserveProductId(event.getReserveProductId())
-                .orderId(event.getOrderId())
-                .errorMsg(event.getErrorMsg())
-                .username(event.getUsername())
-                .build();
-        commandGateway.sendAndWait(rollbackCommand);
-    }
-
-
-    @SagaEventHandler(associationProperty = "orderId")
-    public void on(PromotionApplyRollbackedEvent event) {
-        log.info("Saga Event Rollback [2] : Received PromotionApplyRollbackedEvent for order id: {}", event.getOrderId());
         /// Rollback the reserve product command.
         RollbackReserveProductCommand rollbackCommand = RollbackReserveProductCommand.builder()
                 .reserveProductId(event.getReserveProductId())
@@ -237,9 +184,7 @@ public class OrderProcessManager {
 
     @SagaEventHandler(associationProperty = "orderId")
     public void on(ProductReservedRollbackedEvent event) {
-        log.info("Saga Event Rollback [3]: Received ProductReservedRollbackedEvent for order id: {}", event.getOrderId());
-        /// Rollback the order creation.
-        log.info("Received username {}",event.getUsername() );
+        log.info("Saga Event Rollback [2]: Received ProductReservedRollbackedEvent for order id: {}", event.getOrderId());
 
         RollbackCreateOrderCommand rollbackCommand = RollbackCreateOrderCommand.builder()
                 .orderId(event.getOrderId())

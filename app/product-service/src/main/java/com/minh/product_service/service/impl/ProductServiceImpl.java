@@ -17,7 +17,6 @@ import com.minh.product_service.entity.Product;
 import com.minh.product_service.payload.response.ProductVariantGrpc;
 import com.minh.product_service.query.queries.*;
 import com.minh.product_service.repository.ProductRepository;
-import com.minh.product_service.repository.ReserveProductRepository;
 import com.minh.product_service.service.ProductImageService;
 import com.minh.product_service.service.ProductService;
 import com.minh.product_service.service.ProductVariantService;
@@ -49,7 +48,6 @@ public class ProductServiceImpl implements ProductService {
     private final ProductVariantService productVariantService;
     private final ProductImageService productImageService;
     private final ModelMapper modelMapper;
-    private final ReserveProductRepository reserveProductRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final StreamBridge streamBridge;
 
@@ -230,28 +228,34 @@ public class ProductServiceImpl implements ProductService {
         productRepository.save(product);
 
         List<ProductVariantDTO> productVariantDTOS = event.getProductVariants();
-        Map<String, ProductVariantDTO> variantMap = productVariantDTOS.stream()
+        /// Chia danh sách cập nhật mới này thành 2 loại: biến thể mới (chưa có ID) và biến thể đã tồn tại (có ID).
+        List<ProductVariantDTO> newVariantList = productVariantDTOS.stream()
+                .filter((variant) -> !StringUtils.hasText(variant.getId()))
+                .toList();
+
+        List<ProductVariantDTO> existedVariantList = productVariantDTOS.stream()
+                .filter((variant) -> StringUtils.hasText(variant.getId()))
+                .toList();
+        Map<String, ProductVariantDTO> existedVariantMap = existedVariantList.stream()
                 .collect(Collectors.toMap(ProductVariantDTO::getId, variant -> variant));
 
         /// Nếu một biến thể không còn trong danh sách mới, xoá nó.
         List<ProductVariantDTO> existingVariants = productVariantService.findProductVariantsByProductId(product.getId());
         existingVariants.forEach(productVariantDTO -> {
-            if (!variantMap.containsKey(productVariantDTO.getId())) {
+            if (!existedVariantMap.containsKey(productVariantDTO.getId())) {
                 productVariantService.deleteProductVariant(productVariantDTO.getId());
             } else {
                 // Cập nhật biến thể nếu tồn tại trong danh sách mới.
-                ProductVariantDTO updatedVariant = variantMap.get(productVariantDTO.getId());
+                ProductVariantDTO updatedVariant = existedVariantMap.get(productVariantDTO.getId());
                 updatedVariant.setProductId(product.getId());
                 productVariantService.updateProductVariant(updatedVariant);
             }
         });
 
         /// Duyệt danh sách biến thể mới và tạo mới nếu chưa tồn tại.
-        for (ProductVariantDTO newVariant : productVariantDTOS) {
-            if (newVariant.getId() == null || newVariant.getId().isEmpty()) {
-                newVariant.setProductId(product.getId());
-                productVariantService.createProductVariant(newVariant);
-            }
+        for (ProductVariantDTO newVariant : newVariantList) {
+            newVariant.setProductId(product.getId());
+            productVariantService.createProductVariant(newVariant);
         }
 
         // Xoá tất cả hình ảnh cũ liên quan đến sản phẩm.
@@ -267,13 +271,6 @@ public class ProductServiceImpl implements ProductService {
                 productImageDTO.setImageUrl(image);
                 productImageService.createProductImage(productImageDTO);
             });
-        }
-
-        var result = streamBridge.send("publishProductUpdatedEvent-out-0",product.getSlug());
-        if (result) {
-            log.info("Gửi sự kiện cập nhật sản phẩm tới kafka thành công.");
-        }   else {
-            log.error("Gửi sự kiện cập nhật sản phẩm tới kafka thất bại.");
         }
     }
 
@@ -350,18 +347,6 @@ public class ProductServiceImpl implements ProductService {
                     .build();
         }
 
-        String key = this.createProductCacheKey(query.getProductId());
-        List<ProductVariantDTO> cachedData = (List<ProductVariantDTO>) redisTemplate.opsForValue().get(key);
-        if (Objects.nonNull(cachedData) && !cachedData.isEmpty()) {
-            log.info("Tồn tại biến thể sản phẩm với productId {} trong cache.", query.getProductId());
-            return ResponseData.builder()
-                    .status(HttpStatus.OK.value())
-                    .message(ResponseMessages.SUCCESS)
-                    .data(cachedData)
-                    .build();
-        }
-        log.info("Không tìm thấy biến thể sản phẩm với productId {} trong cache.", query.getProductId());
-
         Product product = productRepository.findById(query.getProductId()).orElse(null);
         if (product == null) {
             return ResponseData.builder()
@@ -379,18 +364,11 @@ public class ProductServiceImpl implements ProductService {
                 })
                 .collect(Collectors.toList());
 
-        /// Cache the product variants.
-        redisTemplate.opsForValue().set(key, data, 1800, TimeUnit.SECONDS);
-
         return ResponseData.builder()
                 .status(HttpStatus.OK.value())
                 .message(ResponseMessages.SUCCESS)
                 .data(data)
                 .build();
-    }
-
-    private String createProductCacheKey(String productId) {
-        return "product:" + productId + ":variants";
     }
 
     @Override

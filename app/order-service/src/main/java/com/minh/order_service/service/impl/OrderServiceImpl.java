@@ -12,6 +12,8 @@ import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
 import com.minh.order_service.DTOs.OrderDto;
+import com.minh.order_service.DTOs.PromotionDTO;
+import com.minh.order_service.entity.OrderPromotion;
 import com.minh.order_service.enums.NotifyTemplateCode;
 import com.minh.order_service.enums.OrderStatus;
 import com.minh.order_service.enums.PaymentStatus;
@@ -28,9 +30,11 @@ import com.minh.order_service.query.queries.FindOverallOrderStatusQuery;
 import com.minh.order_service.query.queries.FindOverallStatusOfCreatingOrderQuery;
 import com.minh.order_service.query.queries.GetOrderDetailQuery;
 import com.minh.order_service.query.queries.SearchOrdersForUserQuery;
-import com.minh.order_service.query.repository.OrderRepository;
+import com.minh.order_service.repository.OrderRepository;
+import com.minh.order_service.repository.OrderPromotionRepository;
 import com.minh.order_service.service.OrderItemService;
 import com.minh.order_service.service.OrderService;
+import com.minh.order_service.service.PromotionService;
 import game_service.GetShippingAddressRequest;
 import game_service.GetShippingAddressResponse;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -50,7 +55,7 @@ import product_service.FindProductVariantByListProductVariantIdResponse;
 import product_service.OrderItemAndProductVariantId;
 import product_service.ProductVariantRes;
 
-import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.*;
 
 @Slf4j
@@ -65,6 +70,8 @@ public class OrderServiceImpl implements OrderService {
     private final SupportGrpcClient supportGrpcClient;
     private final PaymentGrpcClient paymentGrpcClient;
     private final StreamBridge streamBridge;
+    private final PromotionService promotionService;
+    private final OrderPromotionRepository orderPromotionRepository;
 
 
     @Override
@@ -87,6 +94,30 @@ public class OrderServiceImpl implements OrderService {
             item.setId(AppUtils.generateUUIDv7());
         }
         orderItemService.saveAll(items);
+
+        /// Apply promotion when event has promotion code.
+        if (StringUtils.hasText(event.getPromotionId())) {
+            log.info("Applying promotion with id: {} for order id: {}", event.getPromotionId(), event.getOrderId());
+
+            /// Find promotion.
+            PromotionDTO promotion = promotionService.findById(event.getPromotionId());
+            if (Objects.nonNull(promotion)) {
+                log.info("Promotion with id: {} found for order id: {}", event.getPromotionId(), event.getOrderId());
+                if (Objects.nonNull(promotion.getUsageCount()) && promotion.getUsageCount() > 0) {
+                    OrderPromotion entity = new OrderPromotion();
+                    entity.setId(AppUtils.generateUUIDv7());
+                    entity.setOrderId(event.getOrderId());
+                    entity.setPromotionId(promotion.getId());
+                    entity.setIsUsed(Boolean.TRUE);
+                    entity.setUsedAt(new Timestamp(System.currentTimeMillis()));
+                    orderPromotionRepository.save(entity);
+
+                    /// Decrease usage count of this promotion.
+                    promotion.setUsageCount(promotion.getUsageCount() - 1);
+                    promotionService.updatePromotion(promotion);
+                }
+            }
+        }
     }
 
     @Override
@@ -99,6 +130,8 @@ public class OrderServiceImpl implements OrderService {
         /// Lấy thông tin các item của đơn hàng trước khi chúng bị xóa.
         List<OrderItem> orderItems = orderItemService.getAllByOrderId(event.getOrderId());
         orderItemService.removeAllByOrderId(order.getId());
+
+        this.rollbackUsedPromotion(event.getOrderId());
 
         /// Send a notification that order creation has been rolled back.
         List<OrderedItem> items = new ArrayList<>();
@@ -130,13 +163,38 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    private void rollbackUsedPromotion(String orderId) {
+        List<OrderPromotion> orderPromotions = orderPromotionRepository.findAllByOrderId(orderId);
+
+        OrderPromotion orderPromotion = orderPromotions.stream()
+                .filter(OrderPromotion::getIsUsed)
+                .findFirst()
+                .orElse(null);
+
+        if (Objects.isNull(orderPromotion)) {
+            log.info("No promotion applied for this order: {}", orderId);
+            return;
+        }
+
+        String promotionId = orderPromotion.getPromotionId();
+        PromotionDTO promotionDTO = promotionService.findById(promotionId);
+        if (Objects.isNull(promotionDTO)) {
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Promotion.NOT_FOUND, promotionId));
+        }
+        promotionDTO.setUsageCount(promotionDTO.getUsageCount() + 1);
+        promotionService.updatePromotion(promotionDTO);
+
+        /// Update all order promotions status to false.
+        orderPromotionRepository.updateIsUsedByIds(Boolean.FALSE, List.of(orderPromotion.getId()));
+    }
+
     @Override
     public void confirmCreatedOrder(CreatedOrderConfirmedEvent event) {
         Order saved = orderRepository.findById(event.getOrderId()).orElseThrow(
                 () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.NOT_FOUND, event.getOrderId()))
         );
 
-        saved.setStatus(OrderStatus.CONFIRMED);
+        saved.setStatus(OrderStatus.SUCCESS);
         orderRepository.save(saved);
 
         /// Gửi 1 event sang cho support service để service này cho phép review đơn hàng này.
@@ -323,8 +381,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public ResponseData searchOrdersForUser(SearchOrdersForUserQuery query) {
-        String createdUser = AppUtils.getUsername();
-        query.setCreatedUser(createdUser);
+        String currentUser = AppUtils.getUsername();
+        query.setCreatedBy(currentUser);
         Pageable pageable = AppUtils.toPageable(query);
         Page<String> orderIds = orderRepository.searchOrderIdsForUser(query, pageable);
 

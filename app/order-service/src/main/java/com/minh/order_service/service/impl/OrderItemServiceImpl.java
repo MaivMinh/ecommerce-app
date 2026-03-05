@@ -1,7 +1,7 @@
 package com.minh.order_service.service.impl;
 
 import com.minh.order_service.query.entity.OrderItem;
-import com.minh.order_service.query.repository.OrderItemRepository;
+import com.minh.order_service.repository.OrderItemRepository;
 import com.minh.order_service.service.OrderItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

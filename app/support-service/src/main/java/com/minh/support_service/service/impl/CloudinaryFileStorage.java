@@ -2,6 +2,7 @@ package com.minh.support_service.service.impl;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.minh.support_service.payload.response.CloudinaryUploadResult;
 import com.minh.support_service.payload.response.UploadResult;
 import com.minh.support_service.service.FileStorageService;
 import lombok.RequiredArgsConstructor;

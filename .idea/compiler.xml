@@ -12,7 +12,6 @@
         <module name="realtime-gateway" />
         <module name="event-service" />
         <module name="support-service" />
-        <module name="promotion-service" />
         <module name="api-gateway" />
         <module name="product-service" />
         <module name="order-service" />
@@ -23,6 +22,7 @@
     <bytecodeTargetLevel>
       <module name="game-service" target="21" />
       <module name="game2-service" target="21" />
+      <module name="promotion-service" target="21" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">

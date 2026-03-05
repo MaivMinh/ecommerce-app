@@ -16,6 +16,7 @@
       <set>
         <option value="$PROJECT_DIR$/app/game-service/pom.xml" />
         <option value="$PROJECT_DIR$/app/game2-service/pom.xml" />
+        <option value="$PROJECT_DIR$/app/promotion-service/pom.xml" />
       </set>
     </option>
   </component>

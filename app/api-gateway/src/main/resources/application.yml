@@ -44,7 +44,7 @@ spring:
         - id: order-service
           uri: lb://order-service
           predicates:
-            - Path=/api/orders/**,/api/orders
+            - Path=/api/orders/**,/api/orders,/api/promotions/**,/api/promotions
             - Method=GET,POST,PUT,DELETE,PATCH
           filters:
             - name: CircuitBreaker
@@ -62,17 +62,6 @@ spring:
               args:
                 name: paymentService
                 fallbackUri: "forward:/payments/contact-support"
-
-        - id: promotion-service
-          uri: lb://promotion-service
-          predicates:
-            - Path=/api/promotions/**,/api/promotions
-            - Method=GET,POST,PUT,DELETE,PATCH
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: promotionService
-                fallbackUri: "forward:/promotions/contact-support"
 
         - id: notify-service
           uri: lb://notify-service

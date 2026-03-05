@@ -8,7 +8,6 @@ import java.util.List;
 public interface ProductVariantService {
     void createProductVariant(ProductVariantDTO productVariantDTO);
 
-
     List<ProductVariantDTO> findProductVariantsByProductId(String id);
 
     void updateProductVariant(ProductVariantDTO productVariantDTO);

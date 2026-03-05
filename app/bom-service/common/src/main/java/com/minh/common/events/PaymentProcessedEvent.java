@@ -11,7 +11,6 @@ import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
 public class PaymentProcessedEvent {
     private String paymentId;
     private String orderId;
-    private String orderPromotionId;
     private String reserveProductId;
     private Double total;
     private String currency;

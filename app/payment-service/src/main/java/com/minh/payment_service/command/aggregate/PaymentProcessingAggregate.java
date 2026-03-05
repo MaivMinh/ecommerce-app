@@ -20,7 +20,6 @@ public class PaymentProcessingAggregate {
     @AggregateIdentifier
     private String paymentId;
     private String orderId;
-    private String orderPromotionId;
     private String reserveProductId;
     private Double total;
     private String currency;
@@ -42,7 +41,6 @@ public class PaymentProcessingAggregate {
     public void on(PaymentProcessedEvent event) {
         this.paymentId = event.getPaymentId();
         this.orderId = event.getOrderId();
-        this.orderPromotionId = event.getOrderPromotionId();
         this.reserveProductId = event.getReserveProductId();
         this.total = event.getTotal();
         this.currency = event.getCurrency();

@@ -3,11 +3,10 @@ package com.minh.product_service.service.impl;
 import com.minh.product_service.dto.ProductImageDTO;
 import com.minh.product_service.entity.ProductImage;
 import com.minh.product_service.repository.ProductImageRepository;
-import com.minh.product_service.repository.ProductRepository;
 import com.minh.product_service.service.ProductImageService;
-import com.netflix.spectator.api.Registry;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,6 +17,7 @@ import java.util.UUID;
 public class ProductImageServiceImpl implements ProductImageService {
     private final ProductImageRepository productImageRepository;
     private final ModelMapper modelMapper;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
     public void createProductImage(ProductImageDTO productImageDTO) {
@@ -40,9 +40,10 @@ public class ProductImageServiceImpl implements ProductImageService {
 
     @Override
     public void deleteProductImage(String productImageId) {
-        if (!productImageRepository.existsById(productImageId)) {
-            throw new IllegalArgumentException("Product image not found with id: " + productImageId);
-        }
+        ProductImage entity = productImageRepository.findById(productImageId).orElseThrow(
+                () -> new IllegalArgumentException("Product image not found with id: " + productImageId)
+        );
+
         productImageRepository.deleteById(productImageId);
     }
 

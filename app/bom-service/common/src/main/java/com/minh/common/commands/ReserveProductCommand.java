@@ -15,7 +15,6 @@ public class ReserveProductCommand {
     @TargetAggregateIdentifier
     private String reserveProductId;
     private String orderId;
-    private String promotionId;
     private String paymentMethod;
     private List<ReserveProductItem> reserveProductItems;
     private Double total;

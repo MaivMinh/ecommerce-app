@@ -46,12 +46,5 @@
       <jdbc-url>jdbc:mysql://localhost:3306/ecommerce_cart</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="ecommerce_promotion@localhost" uuid="784f210b-5123-444d-89dc-acab931d4f45">
-      <driver-ref>mysql.8</driver-ref>
-      <synchronize>true</synchronize>
-      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://localhost:3306/ecommerce_promotion</jdbc-url>
-      <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>
   </component>
 </project>

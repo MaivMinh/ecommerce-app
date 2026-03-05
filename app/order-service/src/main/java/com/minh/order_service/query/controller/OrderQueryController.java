@@ -53,6 +53,8 @@ public class OrderQueryController {
         }
         query.setPage(request.getPage());
         query.setSize(request.getSize());
+        query.setSortBy(request.getSortBy());
+        query.setSortDirection(request.getSortDirection());
         ResponseData response = queryGateway.query(query, ResponseTypes.instanceOf(ResponseData.class)).join();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
