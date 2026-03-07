@@ -72,16 +72,11 @@ eureka:
 
 cloudinary:
   cloud:
-    name: deozipakf
+    name: ${CLOUDINARY_CLOUD_NAME:deozipakf}
   api:
-    key: 617116739785479
-    secret: l43AgCl03cV8V008w_FRC2U79zM
+    key: ${CLOUDINARY_API_KEY:617116739785479}
+    secret: ${CLOUDINARY_API_SECRET:l43AgCl03cV8V008w_FRC2U79zM}
 
-minio:
-  endpoint: http://localhost:9000
-  access-key: ecommerce_user
-  secret-key: minh2000
-  bucket: ecommerce
 
 axon:
   axonserver:
@@ -96,7 +91,7 @@ grpc:
     port: 9097
   client:
     support-service:
-      address: ${GRPC_SERVER_PRODUCT_SERVICE_ADDRESS:static://localhost:9096}
+      address: ${GRPC_SERVER_SUPPORT_SERVICE_ADDRESS:static://localhost:9096}
       negotiation-type: plaintext
       enable-keep-alive: true
       keep-alive-without-calls: true
@@ -121,7 +116,7 @@ resilience4j:
 
   data:
     redis:
-      host: localhost
+      host: ${REDIS_HOST:localhost}
       port: 6379
       timeout: 2000
       repositories:

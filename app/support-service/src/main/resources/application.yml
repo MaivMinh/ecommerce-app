@@ -81,16 +81,10 @@ eureka:
 
 cloudinary:
   cloud:
-    name: deozipakf
+    name: ${CLOUDINARY_CLOUD_NAME:deozipakf}
   api:
-    key: 617116739785479
-    secret: l43AgCl03cV8V008w_FRC2U79zM
-
-minio:
-  endpoint: http://localhost:9000
-  access-key: ecommerce_user
-  secret-key: minh2000
-  bucket: ecommerce
+    key: ${CLOUDINARY_API_KEY:617116739785479}
+    secret: ${CLOUDINARY_API_SECRET:l43AgCl03cV8V008w_FRC2U79zM}
 
 file:
   storage:

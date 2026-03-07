@@ -2,15 +2,439 @@
 version: "3.9"
 
 services:
-  minio:
-    image: minio/minio:RELEASE.2023-10-25T06-33-25Z
-    container_name: minio
-    ports:
-      - "9000:9000"     # S3 API
-      - "9001:9001"     # MinIO Console
-    environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: minh2000
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.98.0
+    container_name: otel-collector
+    command: [ "--config=/etc/otel/config.yaml" ]
     volumes:
-      - ./minio/data:/data
-    command: server /data --console-address ":9001"
+      - ./observability/otel/otel-collector-config.yaml:/etc/otel/config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+    depends_on:
+      - tempo
+      - loki
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo.yaml
+    ports:
+      - "3200:3200"
+      - "4317"
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  axon-server:
+    image: axoniq/axonserver
+    ports:
+      - "8024:8024"
+      - "8124:8124"
+    networks:
+      - e-commerce
+    volumes:
+      - "/root/data/axonserver-docker/data:/axonserver/data"
+      - "/root/data/axonserver-docker/events:/axonserver/events"
+      - "/root/data/axonserver-docker/config:/axonserver/config"
+    restart: unless-stopped
+
+  redis-service:
+    image: redis:7.4
+    restart: unless-stopped
+    networks:
+      - e-commerce
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+
+  kafka:
+    image: docker.io/bitnami/kafka:4.0
+    ports:
+      - "9092:9092"
+    networks:
+      - e-commerce
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # Listeners
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+
+  db-service:
+    image: mysql:8.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=ecommerce_db
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3305:3306"
+    volumes:
+      - /root/data/ecommerce-db:/var/lib/mysql
+
+  service-discovery:
+    image: service-discovery:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=service-discovery
+      - OTEL_SERVICE_NAME=service-discovery
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    ports:
+      - "8761:8761"
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    depends_on:
+      - otel-collector
+
+  api-gateway:
+    image: api-gateway:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=api-gateway
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATA_REDIS_HOST=redis-service
+      - SPRING_DATA_REDIS_PORT=6379
+      - OTEL_SERVICE_NAME=api-gateway
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+  # =======================
+  # Event Service
+  # =======================
+  event-service:
+    image: event-service:1.0
+    networks:
+      - e-commerce
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    restart: on-failure
+    ports:
+      - "8089:8089"
+      - "9097:9097"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_SQL_INIT_MODE=never
+      - SPRING_APPLICATION_NAME=event-service
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - EUREKA_INSTANCE_PREFERIPADDRESS=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_event
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - GRPC_SERVER_SUPPORT_SERVICE_ADDRESS=static://support-service:9096
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - REDIS_HOST=http://redis-service
+      - OTEL_SERVICE_NAME=event-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+  # =======================
+  # Order Service
+  # =======================
+  order-service:
+    image: order-service:1.0
+    networks:
+      - e-commerce
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    restart: on-failure
+    ports:
+      - "8084:8084"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=order-service
+      - KAFKA_BROKER=kafka:9092
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_order
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - OTEL_SERVICE_NAME=order-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+  # =======================
+  # Payment Service
+  # =======================
+  payment-service:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: payment-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8085:8085"
+      - "9095:9095"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=payment-service
+      - SPRING_SQL_INIT_MODE=never
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_payment
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - OTEL_SERVICE_NAME=payment-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+  # =======================
+  # Product Service
+  # =======================
+  product-service:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: product-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=product-service
+      - SPRING_SQL_INIT_MODE=never
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_product
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=http://redis-service
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - OTEL_SERVICE_NAME=product-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+  # =======================
+  # Realtime Gateway
+  # =======================
+  realtime-gateway:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: realtime-gateway:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=realtime-gateway
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_product
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - REDIS_HOST=http://redis-service
+      - OTEL_SERVICE_NAME=realtime-gateway
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+  # =======================
+  # Support Service
+  # =======================
+  support-service:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: support-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8086:8086"
+      - "9096:9096"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=support-service
+      - SPRING_SQL_INIT_MODE=never
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_support
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - AXON_AXONSERVER_SERVERS=axon-server:8124
+      - KAFKA_BROKER=kafka:9092
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - GRPC_SERVER_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
+      - OTEL_SERVICE_NAME=support-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+  # =======================
+  # Notify Service
+  # =======================
+  notify-service:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    image: notify-service:1.0
+    restart: on-failure
+    networks:
+      - e-commerce
+    env_file:
+      - .env
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=notify-service
+      - SPRING_SQL_INIT_MODE=never
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_notify
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - KAFKA_BROKER=kafka:9092
+      - GRPC_SERVER_SUPPORT_SERVICE_ADDRESS=static://support-service:9096
+      - GRPC_SERVER_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
+      - OTEL_SERVICE_NAME=notify-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=otlp
+      - OTEL_LOGS_EXPORTER=otlp
+      - OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED=true
+    depends_on:
+      - otel-collector
+
+networks:
+  e-commerce:
+    driver: "bridge"
+
+# =======================
+# Docker Volumes
+# =======================
+volumes:
+  db-service:
+    driver: local
+  kafka_data:
+    driver: local
