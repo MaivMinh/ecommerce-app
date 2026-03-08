@@ -1,8 +1,12 @@
 FROM eclipse-temurin:21
 
-WORKDIR application
+WORKDIR /application
 
-COPY target/service-discovery-1.0.0.jar application.jar
+# nhận jar từ build argument
+ARG JAR_FILE=target/*.jar
+
+# copy jar vào container
+COPY ${JAR_FILE} application.jar
 
 # ==============================
 # DOWNLOAD OPENTELEMETRY AGENT

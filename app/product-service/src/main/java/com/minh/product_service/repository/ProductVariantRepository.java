@@ -3,7 +3,9 @@ package com.minh.product_service.repository;
 import com.minh.product_service.entity.ProductVariant;
 import com.minh.product_service.repository.projection.ProductVariantGrpcProjection;
 import com.netflix.spectator.api.Registry;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -28,4 +30,24 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
             "WHERE pvs.id IN (:#{#productVariantIds})"
             , nativeQuery = true)
     List<ProductVariantGrpcProjection> findProductVariantsByIdsGrpc(@Param("productVariantIds") List<String> productVariantIds);
+
+    @Modifying
+    @Query(value = """
+    update product_variants pv
+    set pv.product_id = :#{#variant.productId},
+        pv.size = :#{#variant.size},
+        pv.color_name = :#{#variant.colorName},
+        pv.color_hex = :#{#variant.colorHex},
+        pv.price = :#{#variant.price},
+        pv.original_price = :#{#variant.originalPrice}
+    where pv.id = :#{#variant.id}
+""", nativeQuery = true)
+    void updateProductVariantExcludeQuantity(@Param(value = "variant") ProductVariant productVariant);
+
+    @Modifying
+    @Query(value = """
+            update product_variants pv set pv.quantity = pv.quantity - :quantity   \s
+            where pv.id = :id and pv.quantity >= :quantity
+           \s""", nativeQuery = true)
+    int atomicUpdateQuantity(@Param(value = "id") String id, @Param(value = "quantity") Integer quantity);
 }

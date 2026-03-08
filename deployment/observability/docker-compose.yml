@@ -1,0 +1,75 @@
+# docker-compose.yml
+version: "3.9"
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.98.0
+    container_name: otel-collector
+    command: [ "--config=/etc/otel/config.yaml" ]
+    volumes:
+      - ./otel/otel-collector-config.yml:/etc/otel/config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+    networks:
+      - e-commerce
+    depends_on:
+      - tempo
+      - loki
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./data/prometheus:/prometheus
+    networks:
+      - e-commerce
+    ports:
+      - "7070:9090"
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    volumes:
+      - ./data/loki:/loki
+    networks:
+      - e-commerce
+    ports:
+      - "3100:3100"
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yml" ]
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo.yml
+      - ./data/tempo:/tmp/tempo
+    networks:
+      - e-commerce
+    ports:
+      - "3200:3200"
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      - e-commerce
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+
+networks:
+  e-commerce:
+    driver: "bridge"
+
+# =======================
+# Docker Volumes
+# =======================

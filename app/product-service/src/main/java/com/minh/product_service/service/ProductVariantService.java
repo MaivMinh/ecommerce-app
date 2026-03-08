@@ -21,4 +21,11 @@ public interface ProductVariantService {
     ProductVariantDTO findById(String productVariantId);
 
     List<ProductVariantGrpc> findProductVariantsByIdsGrpc(List<String> productVariantIds);
+
+    /**
+     * Hàm thực hiện giảm số lượng sản phẩm của biến thể mà không gây ra lỗi overselling.
+     * @param productVariantId: ID của biến thể sản phẩm cần giảm số lượng.
+     * @param quantity: Số lượng cần giảm.
+     */
+    void decreaseProductVariantQuantity(String productVariantId, Integer quantity);
 }

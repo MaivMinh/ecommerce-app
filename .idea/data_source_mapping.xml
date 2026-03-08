@@ -3,5 +3,6 @@
   <component name="DataSourcePerFileMappings">
     <file url="file://$PROJECT_DIR$/app/event-service/src/main/java/com/minh/event_service/repository/QuestionRepository.java" value="13dc5901-464b-4376-a931-cc67f42efcce" />
     <file url="file://$PROJECT_DIR$/app/event-service/src/main/java/com/minh/event_service/repository/VoucherRepository.java" value="13dc5901-464b-4376-a931-cc67f42efcce" />
+    <file url="file://$PROJECT_DIR$/app/product-service/src/main/java/com/minh/product_service/repository/ProductVariantRepository.java" value="64a9ee41-23ae-40fb-9834-bc9a112a8af7" />
   </component>
 </project>

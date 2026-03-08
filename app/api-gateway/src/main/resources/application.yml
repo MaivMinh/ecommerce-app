@@ -231,8 +231,3 @@ resilience4j:
         automaticTransitionFromOpenToHalfOpenEnabled: true
         waitDurationInOpenState: 10000
         failureRateThreshold: 70
-
-grpc:
-  client:
-    product-service:
-      negotiation-type: plaintext

@@ -9,6 +9,7 @@ import com.minh.product_service.repository.ProductVariantRepository;
 import com.minh.product_service.repository.projection.ProductVariantGrpcProjection;
 import com.minh.product_service.service.ProductVariantService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductVariantServiceImpl implements ProductVariantService {
@@ -118,5 +120,27 @@ public class ProductVariantServiceImpl implements ProductVariantService {
                         .originalPrice(projection.getOriginalPrice())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void decreaseProductVariantQuantity(String productVariantId, Integer quantity) {
+        if (Objects.isNull(quantity) || quantity <= 0) {
+            throw new IllegalArgumentException("Số lượng cần đặt phải lớn hơn 0");
+        }
+
+        ProductVariant variant = productVariantRepository.findById(productVariantId).orElseThrow(
+                () -> new RuntimeException(messageCommon.getMessage(ErrorCode.ProductVariant.NOT_FOUND, productVariantId))
+        );
+
+        if (variant.getQuantity() < quantity) {
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.ProductVariant.INSUFFICIENT_QUANTITY, quantity, variant.getQuantity()));
+        }
+
+        int updatedRows = productVariantRepository.atomicUpdateQuantity(productVariantId,quantity);
+        if (updatedRows == 0) {
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.ProductVariant.ATOMIC_UPDATE_FAILED, productVariantId));
+        }
+        log.info("Giảm số lượng sản phẩm của biến thể thành công!");
     }
 }

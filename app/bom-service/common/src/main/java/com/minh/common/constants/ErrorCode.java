@@ -20,6 +20,7 @@ public class ErrorCode {
     public static class ProductVariant {
         public static final String NOT_FOUND = "product.variant.not.found";
         public static final String INSUFFICIENT_QUANTITY = "product.variant.insufficient.quantity";
+        public static final String ATOMIC_UPDATE_FAILED = "product.variant.atomic.update.failed";
     }
 
     public static class Cart {
