@@ -39,10 +39,25 @@ public class GameLogicHandlerImpl implements GameLogicHandler {
         milestoneKey = "event:" + event.getEventId() + ":milestone";    /// String.
 
         /// 1. Update score & correct. Hash Atomic.
+        /*
+        * playerKey -> {
+        *  "score": 100,
+        *  "correct": 5
+        * }
+        * */
         redisTemplate.opsForHash().increment(playerKey, "score", 10);
         redisTemplate.opsForHash().increment(playerKey, "correct", 1);
 
         /// 2. Update ranking. Sorted Set.
+        /// rankingKey: Đại diện cho một tập Set riêng biệt, kiểu như nếu có nhiều event thì mỗi event sẽ có một rankingKey riêng để lưu trữ điểm số của người chơi trong event đó.
+        /// event.getUsername(): là một phần tử (element) trong tập Set rankingKey trên.
+        /// Các username này nếu là Set thông thường thì sẽ không có thứ tự, nhưng vì là Sorted Set nên mỗi username (element) này sẽ đi kèm với một điểm số (Score) để xác định vị trí của nó trong tập Set.
+        /// Và vì vậy, chúng ta có thể xem Sorted Set này giống với HashMap, trong đó key là username và value là điểm số (score) của người chơi đó.
+
+        /*
+        * rankingKey -> [username_1(score_1), username_2(score_2), ...]
+        * score_1 > score_2 => username_1 đứng trước username_2 trong rankingKey.
+        * */
         redisTemplate.opsForZSet().incrementScore(rankingKey, event.getUsername(), 10);
 
         /// 3. Update milestone.
