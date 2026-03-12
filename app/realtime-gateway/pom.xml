@@ -99,7 +99,6 @@
             <artifactId>spring-webflux</artifactId>
         </dependency>
 
-        <!--        Grpc + Axon Framework Configurations.-->
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-client-spring-boot-starter</artifactId>
@@ -112,7 +111,6 @@
             <version>6.0.53</version>
             <scope>compile</scope>
         </dependency>
-        <!--        Grpc + Axon Framework Configurations.-->
 
         <!-- gRPC + Protobuf runtime -->
         <dependency>
