@@ -71,10 +71,6 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
 
-axon:
-  axonserver:
-    enabled: false
-
 logging:
   level:
     net.devh.boot.grpc.server: DEBUG

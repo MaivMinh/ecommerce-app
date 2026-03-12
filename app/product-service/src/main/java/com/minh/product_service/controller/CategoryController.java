@@ -2,11 +2,13 @@ package com.minh.product_service.controller;
 
 import com.minh.common.response.ResponseData;
 import com.minh.product_service.dto.CategoryDTO;
-import com.minh.product_service.payload.request.*;
+import com.minh.product_service.payload.request.FindAllCategoriesQuery;
+import com.minh.product_service.payload.request.FindCategoriesQuery;
+import com.minh.product_service.payload.request.FindCategoryBySlug;
+import com.minh.product_service.payload.request.SearchCategoriesByNameQuery;
 import com.minh.product_service.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

@@ -94,11 +94,6 @@ grpc:
       enable-keep-alive: true
       keep-alive-without-calls: true
 
-axon:
-  axonserver:
-    enabled: false
-
-
 resilience4j:
   timelimiter:
     instances:

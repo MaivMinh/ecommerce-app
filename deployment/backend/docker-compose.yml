@@ -14,19 +14,6 @@ services:
       - ./minio/data:/data
     command: server /data --console-address ":9001"
 
-  axon-server:
-    image: axoniq/axonserver
-    ports:
-      - "8024:8024"
-      - "8124:8124"
-    networks:
-      - e-commerce
-    volumes:
-      - "/root/data/axonserver-docker/data:/axonserver/data"
-      - "/root/data/axonserver-docker/events:/axonserver/events"
-      - "/root/data/axonserver-docker/config:/axonserver/config"
-    restart: unless-stopped
-
   redis-service:
     image: redis:7.4
     restart: unless-stopped
@@ -172,7 +159,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_order
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - AXON_AXONSERVER_SERVERS=axon-server:8124
       - OTEL_SERVICE_NAME=order-service
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -208,7 +194,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_payment
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - AXON_AXONSERVER_SERVERS=axon-server:8124
       - OTEL_SERVICE_NAME=payment-service
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -245,7 +230,6 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - REDIS_HOST=http://redis-service
-      - AXON_AXONSERVER_SERVERS=axon-server:8124
       - OTEL_SERVICE_NAME=product-service
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
@@ -315,7 +299,6 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db-service:3306/ecommerce_support
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - AXON_AXONSERVER_SERVERS=axon-server:8124
       - KAFKA_BROKER=kafka:9092
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}

@@ -57,7 +57,7 @@
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-server-spring-boot-starter</artifactId>
-            <version>${grpc-axon.version}</version>
+            <version>${grpc-spring-boot-starter.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>

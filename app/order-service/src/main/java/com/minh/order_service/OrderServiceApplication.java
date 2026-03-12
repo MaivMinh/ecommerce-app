@@ -15,9 +15,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 @EnableJpaRepositories(basePackages = "com.minh.order_service.repository")
 @EntityScan(basePackages = {
         "com.minh.order_service.query.entity",
-        "com.minh.order_service.entity",
-        "org.axonframework.eventhandling.tokenstore.jpa",
-        "org.axonframework.modelling.saga.repository.jpa"
+        "com.minh.order_service.entity"
 })
 @ComponentScan(basePackages = {"com.minh.order_service.*", "com.minh.common"})
 @EnableMethodSecurity
