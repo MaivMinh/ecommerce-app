@@ -4,15 +4,14 @@ import com.minh.common.constants.ErrorCode;
 import com.minh.common.constants.ResponseMessages;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.utils.AppUtils;
-import com.minh.payment_service.command.events.PaymentMethodCreatedEvent;
-import com.minh.payment_service.command.events.PaymentMethodDeletedEvent;
-import com.minh.payment_service.command.events.PaymentMethodUpdatedEvent;
+import com.minh.payment_service.DTOs.PaymentMethodDto;
+import com.minh.payment_service.entity.PaymentMethod;
 import com.minh.payment_service.enums.PaymentMethodCurrency;
 import com.minh.payment_service.enums.PaymentMethodType;
+import com.minh.payment_service.payload.request.CreatePaymentMethodRequest;
+import com.minh.payment_service.payload.request.SearchPaymentMethodsQuery;
+import com.minh.payment_service.payload.request.UpdatePaymentMethodRequest;
 import com.minh.payment_service.payload.response.ResponseData;
-import com.minh.payment_service.query.DTOs.PaymentMethodDto;
-import com.minh.payment_service.query.entity.PaymentMethod;
-import com.minh.payment_service.query.queries.SearchPaymentMethodsQuery;
 import com.minh.payment_service.repository.PaymentMethodRepository;
 import com.minh.payment_service.service.PaymentMethodService;
 import lombok.RequiredArgsConstructor;
@@ -37,21 +36,22 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     @Transactional
-    public void createPaymentMethod(PaymentMethodCreatedEvent event) {
+    public void createPaymentMethod(CreatePaymentMethodRequest request) {
         PaymentMethod method = PaymentMethod.builder()
-                .id(event.getId())
-                .code(event.getCode())
-                .name(event.getName())
-                .description(event.getDescription())
-                .type(PaymentMethodType.valueOf(event.getType()))
-                .provider(event.getProvider())
-                .currency(PaymentMethodCurrency.valueOf(event.getCurrency()))
-                .iconUrl(event.getIconUrl())
-                .isActive(event.getIsActive())
+                .id(AppUtils.generateUUIDv7())
+                .code(request.getCode())
+                .name(request.getName())
+                .description(request.getDescription())
+                .type(PaymentMethodType.valueOf(request.getType()))
+                .provider(request.getProvider())
+                .currency(PaymentMethodCurrency.valueOf(request.getCurrency()))
+                .iconUrl(request.getIconUrl())
+                .isActive(request.getIsActive())
                 .build();
 
         paymentMethodRepository.save(method);
     }
+
     @Override
     public ResponseData getPaymentMethods(SearchPaymentMethodsQuery query) {
         Pageable pageable = AppUtils.toPageable(query);
@@ -75,39 +75,30 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
     }
 
     @Override
-    public void updatePaymentMethod(PaymentMethodUpdatedEvent event) {
-        PaymentMethod method = paymentMethodRepository.findById(event.getId()).orElse(null);
+    public void updatePaymentMethod(UpdatePaymentMethodRequest request) {
+        PaymentMethod method = paymentMethodRepository.findById(request.getId()).orElse(null);
         if (Objects.isNull(method)) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.PaymentMethod.NOT_FOUND,event.getId()));
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.PaymentMethod.NOT_FOUND,request.getId()));
         }
 
-        method.setName(event.getName());
-        method.setCurrency(PaymentMethodCurrency.valueOf(event.getCurrency()));
-        method.setType(PaymentMethodType.valueOf(event.getType()));
-        method.setProvider(event.getProvider());
-        method.setDescription(event.getDescription());
-        method.setIsActive(event.getIsActive());
-        method.setIconUrl(event.getIconUrl());
-        method.setCode(event.getCode());
+        method.setName(request.getName());
+        method.setCurrency(PaymentMethodCurrency.valueOf(request.getCurrency()));
+        method.setType(PaymentMethodType.valueOf(request.getType()));
+        method.setProvider(request.getProvider());
+        method.setDescription(request.getDescription());
+        method.setIsActive(request.getIsActive());
+        method.setIconUrl(request.getIconUrl());
+        method.setCode(request.getCode());
         paymentMethodRepository.save(method);
     }
 
     @Override
-    public void deletePaymentMethod(PaymentMethodDeletedEvent event) {
-        PaymentMethod method = paymentMethodRepository.findById(event.getId()).orElse(null);
+    public void deletePaymentMethod(String id) {
+        PaymentMethod method = paymentMethodRepository.findById(id).orElse(null);
         if (Objects.isNull(method)) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.PaymentMethod.NOT_FOUND,event.getId()));
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.PaymentMethod.NOT_FOUND,id));
         }
         paymentMethodRepository.delete(method);
-    }
-
-    @Override
-    public PaymentMethodDto findById(String paymentMethodId) {
-        PaymentMethod method = paymentMethodRepository.findById(paymentMethodId).orElse(null);
-        if (Objects.isNull(method)) {
-            return null;
-        }
-        return modelMapper.map(method, PaymentMethodDto.class);
     }
 
     @Override

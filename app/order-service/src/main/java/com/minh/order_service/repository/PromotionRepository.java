@@ -1,7 +1,7 @@
 package com.minh.order_service.repository;
 
 import com.minh.order_service.entity.Promotion;
-import com.minh.order_service.query.queries.SearchPromotionsQuery;
+import com.minh.order_service.payload.request.SearchPromotionsRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,5 +15,5 @@ public interface PromotionRepository extends JpaRepository<Promotion, String> {
             " where (P.code LIKE CONCAT('%', :#{#query.code}, '%')) " +
             " AND (P.status LIKE CONCAT('%', :#{#query.status}, '%')) "
             , nativeQuery = true)
-    Page<Promotion> searchPromotions(@Param("query") SearchPromotionsQuery query, Pageable pageable);
+    Page<Promotion> searchPromotions(@Param("query") SearchPromotionsRequest query, Pageable pageable);
 }

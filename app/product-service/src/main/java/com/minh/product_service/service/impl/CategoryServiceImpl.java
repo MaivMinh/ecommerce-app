@@ -5,15 +5,12 @@ import com.minh.common.constants.ResponseMessages;
 import com.minh.common.exception.ResourceNotFoundException;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
-import com.minh.product_service.command.events.CategoryCreatedEvent;
-import com.minh.product_service.command.events.CategoryDeletedEvent;
-import com.minh.product_service.command.events.CategoryUpdatedEvent;
 import com.minh.product_service.dto.CategoryDTO;
 import com.minh.product_service.entity.Category;
-import com.minh.product_service.query.queries.FindAllCategoriesQuery;
-import com.minh.product_service.query.queries.FindCategoriesQuery;
-import com.minh.product_service.query.queries.FindCategoryBySlug;
-import com.minh.product_service.query.queries.SearchCategoriesByNameQuery;
+import com.minh.product_service.payload.request.FindAllCategoriesQuery;
+import com.minh.product_service.payload.request.FindCategoriesQuery;
+import com.minh.product_service.payload.request.FindCategoryBySlug;
+import com.minh.product_service.payload.request.SearchCategoriesByNameQuery;
 import com.minh.product_service.service.CategoryService;
 import com.minh.product_service.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -123,27 +120,27 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public void createCategory(CategoryCreatedEvent event) {
-        Category category = modelMapper.map(event, Category.class);
-        category.setSlug(generateSlug(event.getName()));
+    public void createCategory(CategoryDTO dto) {
+        Category category = modelMapper.map(dto, Category.class);
+        category.setSlug(generateSlug(dto.getName()));
         categoryRepository.save(category);
     }
 
     @Override
-    public void updateCategory(CategoryUpdatedEvent event) {
-        Category category = categoryRepository.findById(event.getId()).orElseThrow(
+    public void updateCategory(CategoryDTO categoryDTO) {
+        Category category = categoryRepository.findById(categoryDTO.getId()).orElseThrow(
                 () -> new RuntimeException(
-                        messageCommon.getMessage(ErrorCode.Category.NOT_FOUND, event.getId())
+                        messageCommon.getMessage(ErrorCode.Category.NOT_FOUND, categoryDTO.getId())
                 )
         );
-        modelMapper.map(event, category);
+        modelMapper.map(categoryDTO, category);
         categoryRepository.save(category);
     }
 
     @Override
-    public void deleteCategory(CategoryDeletedEvent event) {
-        Category category = categoryRepository.findById(event.getId()).orElseThrow(
-                () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Category.NOT_FOUND, event.getId()))
+    public void deleteCategory(String categoryId) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(
+                () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Category.NOT_FOUND, categoryId))
         );
         categoryRepository.delete(category);
     }

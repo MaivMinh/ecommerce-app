@@ -2,8 +2,8 @@ package com.minh.notify_service.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minh.common.functions.input.NotifyEvent;
-import com.minh.common.functions.input.NotifyOrderConfirmedEvent;
-import com.minh.common.functions.input.NotifyOrderRolledBackEvent;
+import com.minh.common.functions.input.NotifyOrderCancelledEvent;
+import com.minh.common.functions.input.NotifyOrderCompletedEvent;
 import com.minh.common.functions.input.OrderedItem;
 import com.minh.common.utils.AppUtils;
 import com.minh.notify_service.dto.NotificationTemplateDto;
@@ -22,7 +22,6 @@ import game_service.GetUserInfoRequest;
 import game_service.GetUserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import product_service.FindProductInfoByProductVariantIdRequest;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationTemplateService notificationTemplateService;
     private final NotificationSendLogRepository notificationSendLogRepository;
-    private final JavaMailSender mailSender;
     private final Configuration freemarkerCfg;
     private final ObjectMapper objectMapper;
     private final SupportGrpcClient supportGrpcClient;
@@ -52,15 +50,15 @@ public class NotificationServiceImpl implements NotificationService {
     private final EmailService emailService;
 
     @Override
-    public void handleNotifyOrderConfirmed(NotifyOrderConfirmedEvent event) {
+    public void handleNotifyOrderConfirmed(NotifyOrderCompletedEvent event) {
         NotifyEvent data = prepareDataOrder(event);
         if (Objects.isNull(data)) {
-            log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderConfirmedEvent: {}", event);
+            log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderCompletedEvent: {}", event);
             return;
         }
 
         if (!StringUtils.hasText(event.getTemplateCode())) {
-            log.error("Template code bị trống trong sự kiện NotifyOrderConfirmedEvent: {}", event);
+            log.error("Template code bị trống trong sự kiện NotifyOrderCompletedEvent: {}", event);
             return;
         }
         String templateCode = event.getTemplateCode();
@@ -78,7 +76,7 @@ public class NotificationServiceImpl implements NotificationService {
             nsl = NotificationSendLog.builder()
                     .id(AppUtils.generateUUIDv7())
                     .templateCode(event.getTemplateCode())
-                    .params(objectMapper.writeValueAsString(event.getParams()))
+                    .params(objectMapper.writeValueAsString(event))
                     .recipient(recipient.get("username"))
                     .renderedTitle(title)
                     .renderedContent(content)
@@ -165,37 +163,37 @@ public class NotificationServiceImpl implements NotificationService {
             event.getRecipient().put("name", userRes.getName());
             event.getRecipient().put("email", userRes.getEmails());
 
-            if (event instanceof NotifyOrderConfirmedEvent
-                    || event instanceof NotifyOrderRolledBackEvent) {
+            if (event instanceof NotifyOrderCompletedEvent
+                    || event instanceof NotifyOrderCancelledEvent) {
                 List<OrderedItem> items;
-                if (event instanceof NotifyOrderConfirmedEvent) {
-                    items = ((NotifyOrderConfirmedEvent) event).getParams().getItems();
+                if (event instanceof NotifyOrderCompletedEvent) {
+                    items = ((NotifyOrderCompletedEvent) event).getItems();
                 } else {
-                    items = ((NotifyOrderRolledBackEvent) event).getParams().getItems();
+                    items = ((NotifyOrderCancelledEvent) event).getItems();
                 }
                 List<OrderedItem> processedItems = this.processOrderedItems(items);
-                if (event instanceof NotifyOrderConfirmedEvent) {
-                    ((NotifyOrderConfirmedEvent) event).getParams().setItems(processedItems);
+                if (event instanceof NotifyOrderCompletedEvent) {
+                    ((NotifyOrderCompletedEvent) event).setItems(processedItems);
                 } else {
-                    ((NotifyOrderRolledBackEvent) event).getParams().setItems(processedItems);
+                    ((NotifyOrderCancelledEvent) event).setItems(processedItems);
                 }
             }
 
             /// Tính lại tổng giá trị đơn hàng dựa trên các item đã được cập nhật thông tin.
             double total = 0.0;
             List<OrderedItem> items;
-            if (event instanceof NotifyOrderConfirmedEvent) {
-                items = ((NotifyOrderConfirmedEvent) event).getParams().getItems();
+            if (event instanceof NotifyOrderCompletedEvent) {
+                items = ((NotifyOrderCompletedEvent) event).getItems();
                 for (OrderedItem item : items) {
                     total += item.getPrice() * item.getQuantity();
                 }
-                ((NotifyOrderConfirmedEvent) event).getParams().setTotal(total);
+                ((NotifyOrderCompletedEvent) event).setTotal(total);
             } else {
-                items = ((NotifyOrderRolledBackEvent) event).getParams().getItems();
+                items = ((NotifyOrderCancelledEvent) event).getItems();
                 for (OrderedItem item : items) {
                     total += item.getPrice() * item.getQuantity();
                 }
-                ((NotifyOrderRolledBackEvent) event).getParams().setTotal(total);
+                ((NotifyOrderCancelledEvent) event).setTotal(total);
             }
             return event;
         } catch (Exception e) {
@@ -213,15 +211,15 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void handleNotifyOrderRolledBack(NotifyOrderRolledBackEvent event) {
-        log.info("Xử lý sự kiện NotifyOrderRolledBackEvent: {}", event);
+    public void handleNotifyOrderCancelled(NotifyOrderCancelledEvent event) {
+        log.info("Xử lý sự kiện NotifyOrderCancelledEvent: {}", event);
         if (!StringUtils.hasText(event.getTemplateCode())) {
-            log.error("Template code bị trống trong sự kiện NotifyOrderConfirmedEvent: {}", event);
+            log.error("Template code bị trống trong sự kiện NotifyOrderCompletedEvent: {}", event);
             return;
         }
         NotifyEvent data = prepareDataOrder(event);
         if (Objects.isNull(data)) {
-            log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderConfirmedEvent: {}", event);
+            log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderCompletedEvent: {}", event);
             return;
         }
         String templateCode = event.getTemplateCode();
@@ -239,7 +237,7 @@ public class NotificationServiceImpl implements NotificationService {
             nsl = NotificationSendLog.builder()
                     .id(AppUtils.generateUUIDv7())
                     .templateCode(event.getTemplateCode())
-                    .params(objectMapper.writeValueAsString(event.getParams()))
+                    .params(objectMapper.writeValueAsString(event))
                     .recipient(recipient.get("username"))
                     .renderedTitle(title)
                     .renderedContent(content)

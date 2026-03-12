@@ -113,19 +113,6 @@
             <version>5.3.6</version>
         </dependency>
 
-
-
-        <dependency>
-            <groupId>org.axonframework</groupId>
-            <artifactId>axon-spring-boot-starter</artifactId>
-            <version>${axon.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.axonframework</groupId>
-            <artifactId>axon-server-connector</artifactId>
-        </dependency>
-
-
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>

@@ -1,22 +1,16 @@
 package com.minh.common.events;
 
-import com.minh.common.DTOs.ReserveProductItem;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.util.List;
-
-@Getter
-@Setter
-@Builder
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductReservedEvent {
-    private String reserveProductId;
+public class ProductReservedEvent extends SagaEvent {
     private String orderId;
     private String paymentMethod;
-    private List<ReserveProductItem> reserveProductItems;
     private Double total;
     private String currency;
     private String username;
-    private String productId;
 }

@@ -1,18 +1,15 @@
 package com.minh.common.commands;
 
 import lombok.*;
-import org.axonframework.modelling.command.TargetAggregateIdentifier;
 
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProcessPaymentCommand {
-    @TargetAggregateIdentifier
-    private String paymentId;
+public class ProcessPaymentCommand extends SagaCommand {
     private String orderId;
-    private String reserveProductId;
+    private String paymentId;
     private Double total;
     private String currency;
     private String paymentMethod;

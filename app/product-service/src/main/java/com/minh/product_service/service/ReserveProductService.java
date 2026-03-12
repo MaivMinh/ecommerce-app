@@ -1,12 +1,10 @@
 package com.minh.product_service.service;
 
-import com.minh.common.commands.ReserveProductConfirmedEvent;
-import com.minh.common.events.ProductReservedRollbackedEvent;
-import com.minh.common.events.ProductReservedEvent;
+import com.minh.common.commands.ReleaseProductCommand;
+import com.minh.common.commands.ReserveProductCommand;
 
 public interface ReserveProductService {
-    void reserveProduct(ProductReservedEvent event);
-    void confirmReservedProduct(ReserveProductConfirmedEvent event);
+    void reserveProduct(ReserveProductCommand command);
 
-    void rollbackReservedProduct(ProductReservedRollbackedEvent event);
+    void releaseReservedProduct(ReleaseProductCommand command);
 }

@@ -6,16 +6,13 @@ import com.minh.common.enums.ProductStatus;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
-import com.minh.product_service.command.events.ProductCreatedEvent;
-import com.minh.product_service.command.events.ProductDeletedEvent;
-import com.minh.product_service.command.events.ProductUpdatedEvent;
 import com.minh.product_service.dto.ProductDTO;
 import com.minh.product_service.dto.ProductImageDTO;
 import com.minh.product_service.dto.ProductSearchDTO;
 import com.minh.product_service.dto.ProductVariantDTO;
 import com.minh.product_service.entity.Product;
+import com.minh.product_service.payload.request.*;
 import com.minh.product_service.payload.response.ProductVariantGrpc;
-import com.minh.product_service.query.queries.*;
 import com.minh.product_service.repository.ProductRepository;
 import com.minh.product_service.service.ProductImageService;
 import com.minh.product_service.service.ProductService;
@@ -192,23 +189,24 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void createProduct(ProductCreatedEvent event) {
-        Product product = modelMapper.map(event, Product.class);
+    public void createProduct(ProductDTO dto) {
+        Product product = modelMapper.map(dto, Product.class);
+        product.setId(AppUtils.generateUUIDv7());
         product.setSlug(generateSlug(product.getName()));
-        product.setStatus(ProductStatus.valueOf(event.getStatus()));
+        product.setStatus(ProductStatus.valueOf(dto.getStatus()));
         productRepository.save(product);
 
         /// Tạo mới các biến thể liên quan đến sản phẩm.
-        if (!CollectionUtils.isEmpty(event.getProductVariants())) {
-            event.getProductVariants().forEach(productVariantDTO -> {
+        if (!CollectionUtils.isEmpty(dto.getProductVariants())) {
+            dto.getProductVariants().forEach(productVariantDTO -> {
                 productVariantDTO.setProductId(product.getId());
                 productVariantService.createProductVariant(productVariantDTO);
             });
         }
 
         /// Lưu danh sách hình ảnh.
-        if (!CollectionUtils.isEmpty(event.getImages())) {
-            event.getImages().forEach(image -> {
+        if (!CollectionUtils.isEmpty(dto.getImages())) {
+            dto.getImages().forEach(image -> {
                 ProductImageDTO productImageDTO = new ProductImageDTO();
                 productImageDTO.setId(UUID.randomUUID().toString());
                 productImageDTO.setProductId(product.getId());
@@ -219,15 +217,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void updateProduct(ProductUpdatedEvent event) {
-        Product product = productRepository.findById(event.getId()).orElse(null);
+    public void updateProduct(ProductDTO dto) {
+        Product product = productRepository.findById(dto.getId()).orElse(null);
         if (product == null) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Product.NOT_FOUND, event.getId()));
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Product.NOT_FOUND, dto.getId()));
         }
-        modelMapper.map(event, product);
+        modelMapper.map(dto, product);
         productRepository.save(product);
 
-        List<ProductVariantDTO> productVariantDTOS = event.getProductVariants();
+        List<ProductVariantDTO> productVariantDTOS = dto.getProductVariants();
         /// Chia danh sách cập nhật mới này thành 2 loại: biến thể mới (chưa có ID) và biến thể đã tồn tại (có ID).
         List<ProductVariantDTO> newVariantList = productVariantDTOS.stream()
                 .filter((variant) -> !StringUtils.hasText(variant.getId()))
@@ -262,9 +260,9 @@ public class ProductServiceImpl implements ProductService {
         List<ProductImageDTO> existingImages = productImageService.findProductImagesByProductId(product.getId());
         existingImages.forEach(image -> productImageService.deleteProductImage(image.getId()));
 
-        if (!CollectionUtils.isEmpty(event.getImages())) {
+        if (!CollectionUtils.isEmpty(dto.getImages())) {
             // Lưu lại các hình ảnh mới.
-            event.getImages().forEach(image -> {
+            dto.getImages().forEach(image -> {
                 ProductImageDTO productImageDTO = new ProductImageDTO();
                 productImageDTO.setId(UUID.randomUUID().toString());
                 productImageDTO.setProductId(product.getId());
@@ -275,10 +273,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void deleteProduct(ProductDeletedEvent event) {
-        Product product = productRepository.findById(event.getId()).orElse(null);
+    public void deleteProduct(String productId) {
+        Product product = productRepository.findById(productId).orElse(null);
         if (product == null) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Product.NOT_FOUND, event.getId()));
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Product.NOT_FOUND, productId));
         }
         productRepository.delete(product);
     }

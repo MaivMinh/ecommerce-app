@@ -61,6 +61,7 @@ public class ErrorCode {
 
     public static class Order {
         public static final String NOT_FOUND = "order.not.found";
+        public static final String UPDATE_FAILED = "order.update.failed";
     }
     public static class Payment {
         public static final String NOT_FOUND = "payment.not.found";

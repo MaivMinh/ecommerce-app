@@ -1,10 +1,8 @@
 package com.minh.product_service.service;
 
 import com.minh.common.response.ResponseData;
-import com.minh.product_service.command.events.ProductCreatedEvent;
-import com.minh.product_service.command.events.ProductDeletedEvent;
-import com.minh.product_service.command.events.ProductUpdatedEvent;
-import com.minh.product_service.query.queries.*;
+import com.minh.product_service.dto.ProductDTO;
+import com.minh.product_service.payload.request.*;
 import product_service.*;
 
 public interface ProductService {
@@ -14,11 +12,11 @@ public interface ProductService {
 
     ResponseData findProductBySlug(FindProductBySlugQuery query);
 
-    void createProduct(ProductCreatedEvent event);
+    void createProduct(ProductDTO dto);
 
-    void updateProduct(ProductUpdatedEvent event);
+    void updateProduct(ProductDTO dto);
 
-    void deleteProduct(ProductDeletedEvent event);
+    void deleteProduct(String productId);
 
     ResponseData searchProducts(SearchProductQuery query);
 
@@ -37,6 +35,4 @@ public interface ProductService {
     ResponseData findProductByProductVariantId(FindProductByProductVariantIdQuery query);
 
     FindProductInfoByProductVariantIdResponse findProductInfoByProductVariantId(FindProductInfoByProductVariantIdRequest request);
-
-    void handleProductUpdatedEvent(String slug);
 }

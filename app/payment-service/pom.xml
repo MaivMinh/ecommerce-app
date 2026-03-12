@@ -53,7 +53,7 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
 
-        <!--        Grpc + Axon Framework Configurations.-->
+        <!--        Grpc Configurations.-->
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-server-spring-boot-starter</artifactId>
@@ -65,12 +65,7 @@
             <version>6.0.53</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>org.axonframework</groupId>
-            <artifactId>axon-spring-boot-starter</artifactId>
-            <version>${axon.version}</version>
-        </dependency>
-        <!--        Grpc + Axon Framework Configurations.-->
+        <!--        Grpc Configurations.-->
     </dependencies>
     <build>
         <extensions>

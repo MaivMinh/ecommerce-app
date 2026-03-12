@@ -2,13 +2,11 @@ package com.minh.product_service.service;
 
 import com.minh.common.exception.ResourceNotFoundException;
 import com.minh.common.response.ResponseData;
-import com.minh.product_service.command.events.CategoryCreatedEvent;
-import com.minh.product_service.command.events.CategoryDeletedEvent;
-import com.minh.product_service.command.events.CategoryUpdatedEvent;
-import com.minh.product_service.query.queries.FindAllCategoriesQuery;
-import com.minh.product_service.query.queries.FindCategoriesQuery;
-import com.minh.product_service.query.queries.FindCategoryBySlug;
-import com.minh.product_service.query.queries.SearchCategoriesByNameQuery;
+import com.minh.product_service.dto.CategoryDTO;
+import com.minh.product_service.payload.request.FindAllCategoriesQuery;
+import com.minh.product_service.payload.request.FindCategoriesQuery;
+import com.minh.product_service.payload.request.FindCategoryBySlug;
+import com.minh.product_service.payload.request.SearchCategoriesByNameQuery;
 
 public interface CategoryService {
     /**
@@ -30,9 +28,9 @@ public interface CategoryService {
 
     ResponseData searchCategoriesByName(SearchCategoriesByNameQuery query);
 
-    void createCategory(CategoryCreatedEvent event);
-    void updateCategory(CategoryUpdatedEvent event);
-    void deleteCategory(CategoryDeletedEvent event);
+    void createCategory(CategoryDTO dto);
+    void updateCategory(CategoryDTO categoryDTO);
+    void deleteCategory(String categoryId);
 
     ResponseData findCategories(FindCategoriesQuery query);
 }

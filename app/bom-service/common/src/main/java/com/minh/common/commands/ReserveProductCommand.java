@@ -1,8 +1,7 @@
 package com.minh.common.commands;
 
-import com.minh.common.DTOs.ReserveProductItem;
+import com.minh.common.DTOs.ReservedProductItem;
 import lombok.*;
-import org.axonframework.modelling.command.TargetAggregateIdentifier;
 
 import java.util.List;
 
@@ -11,12 +10,10 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReserveProductCommand {
-    @TargetAggregateIdentifier
-    private String reserveProductId;
+public class ReserveProductCommand extends SagaCommand {
     private String orderId;
     private String paymentMethod;
-    private List<ReserveProductItem> reserveProductItems;
+    private List<ReservedProductItem> reserveProductItems;
     private Double total;
     private String currency;
     private String username;

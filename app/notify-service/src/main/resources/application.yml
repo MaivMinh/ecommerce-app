@@ -9,28 +9,10 @@ spring:
   threads:
     virtual:
       enabled: true
-  cloud:
-    function:
-      definition: handleNotifyOrderConfirmed;handleNotifyOrderRolledBack
-    stream:
-      bindings: #  Destination bindings component là cầu nối và định nghĩa các kênh (channels) mà ứng dụng sẽ sử dụng để gửi hoặc nhận dữ liệu.
-        springCloudBusInput:
-          destination: springCloudBus
-        handleOrderCreated-in-0:
-          destination: order-created
-          group: ${spring.application.name}
-        handleNotifyOrderConfirmed-in-0:
-          destination: notify-order-confirmed
-          group: ${spring.application.name}
-          content-type: application/json
-        handleNotifyOrderRolledBack-in-0:
-          destination: notify-order-rolledback
-          group: ${spring.application.name}
-          content-type: application/json
-      kafka:
-        binder:
-          brokers:
-            - ${KAFKA_BROKER:localhost:9092}
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+
   mail:
     host: smtp.gmail.com
     port: 587

@@ -9,6 +9,8 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   cloud:
     stream:
       bindings: #  Destination bindings component là cầu nối và định nghĩa các kênh (channels) mà ứng dụng sẽ sử dụng để gửi hoặc nhận dữ liệu.
@@ -77,18 +79,6 @@ eureka:
       preferIpAddress: true
     register-with-eureka: true
     fetch-registry: true
-
-#Axon configuration
-axon:
-  axonserver:
-    servers: ${AXON_AXONSERVER_SERVERS:localhost:8124}
-    enabled: true
-  eventhandling:
-    processors:
-      order-group:
-        mode: subscribing
-      product-group:
-        mode: subscribing
 
 
 resilience4j:

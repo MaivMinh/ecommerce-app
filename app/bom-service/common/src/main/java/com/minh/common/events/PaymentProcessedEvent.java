@@ -1,21 +1,18 @@
 package com.minh.common.events;
 
+import com.minh.common.enums.PaymentStatus;
 import lombok.*;
-import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PaymentProcessedEvent {
-    private String paymentId;
+public class PaymentProcessedEvent extends SagaEvent {
     private String orderId;
-    private String reserveProductId;
+    private String paymentId;
     private Double total;
     private String currency;
     private String paymentMethod;
     private String username;
-    private String productId;
-    private String errorMsg;
 }

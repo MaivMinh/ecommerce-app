@@ -1,12 +1,14 @@
 package com.minh.payment_service.service;
 
-import com.minh.common.events.PaymentProcessedEvent;
-import com.minh.common.events.PaymentProcessedRollbackEvent;
+import com.minh.common.commands.ProcessPaymentCommand;
+import com.minh.common.commands.RefundProcessedPaymentCommand;
 
 public interface PaymentProcessingService {
-    void processPayment(PaymentProcessedEvent event);
+    void processPayment(ProcessPaymentCommand command);
 
-    void rollbackProcessedPayment(PaymentProcessedRollbackEvent event);
+    void rollbackProcessedPayment(RefundProcessedPaymentCommand command);
 
     void setPaymentStrategy(PaymentStrategy paymentStrategy);
+
+    void refundPayment(RefundProcessedPaymentCommand command);
 }

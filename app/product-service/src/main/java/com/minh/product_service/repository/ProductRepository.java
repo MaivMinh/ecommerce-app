@@ -1,7 +1,7 @@
 package com.minh.product_service.repository;
 
 import com.minh.product_service.entity.Product;
-import com.minh.product_service.query.queries.SearchProductQuery;
+import com.minh.product_service.payload.request.SearchProductQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

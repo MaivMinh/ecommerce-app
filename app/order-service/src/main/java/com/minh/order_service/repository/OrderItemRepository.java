@@ -1,6 +1,6 @@
 package com.minh.order_service.repository;
 
-import com.minh.order_service.query.entity.OrderItem;
+import com.minh.order_service.entity.OrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,4 +17,11 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, String> {
 
     @Query(value = "select * from order_items where order_id = :id", nativeQuery = true)
     List<OrderItem> findAllByOrderId(@Param("id") String id);
+
+    @Modifying
+    @Query(value = """
+            DELETE from order_items
+            WHERE order_id = :orderId
+            """, nativeQuery = true)
+    int deleteAllByOrderId(@Param(value = "orderId") String orderId);
 }

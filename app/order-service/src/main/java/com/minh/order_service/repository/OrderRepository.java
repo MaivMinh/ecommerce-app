@@ -1,11 +1,13 @@
 package com.minh.order_service.repository;
 
-import com.minh.order_service.query.controller.SearchOrdersRequest;
-import com.minh.order_service.query.entity.Order;
-import com.minh.order_service.query.queries.SearchOrdersForUserQuery;
+import com.minh.order_service.enums.OrderStatus;
+import com.minh.order_service.payload.request.SearchOrdersRequest;
+import com.minh.order_service.entity.Order;
+import com.minh.order_service.payload.request.SearchOrdersForUserQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -33,4 +35,12 @@ public interface OrderRepository extends JpaRepository<Order, String> {
             " and (COALESCE(:#{#query.createdBy}, null) is null or o.createdBy = :#{#query.createdBy})"
     )
     Page<String> searchOrderIdsForUser(@Param("query") SearchOrdersForUserQuery query, Pageable pageable);
+
+    @Modifying
+    @Query(value = """
+        UPDATE orders
+        SET status = :orderStatus
+        WHERE id = :id
+""", nativeQuery = true)
+    int updateStatusById(@Param(value = "orderStatus") OrderStatus orderStatus,@Param(value = "id") String id);
 }

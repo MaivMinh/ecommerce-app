@@ -6,10 +6,10 @@ import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
 import com.minh.order_service.DTOs.PromotionDTO;
-import com.minh.order_service.command.events.PromotionCreatedEvent;
 import com.minh.order_service.entity.Promotion;
-import com.minh.order_service.query.queries.GetPromotionsQuery;
-import com.minh.order_service.query.queries.SearchPromotionsQuery;
+import com.minh.order_service.payload.request.GetPromotionsRequest;
+import com.minh.order_service.payload.request.CreatePromotionRequest;
+import com.minh.order_service.payload.request.SearchPromotionsRequest;
 import com.minh.order_service.repository.PromotionRepository;
 import com.minh.order_service.service.PromotionService;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
-    public void createPromotion(PromotionCreatedEvent event) {
+    public void createPromotion(CreatePromotionRequest event) {
         if (!StringUtils.hasText(event.getPromotionId())) throw new IllegalArgumentException(messageCommon.getMessage(
                 ErrorCode.INVALID_PARAMS, "promotionId"
         ));
@@ -60,7 +60,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
-    public ResponseData getPromotions(GetPromotionsQuery query) {
+    public ResponseData getPromotions(GetPromotionsRequest query) {
         int page = Math.max(0, query.getPage());
         int size = Math.max(1, query.getSize());
 
@@ -77,7 +77,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
-    public ResponseData searchPromotions(SearchPromotionsQuery query) {
+    public ResponseData searchPromotions(SearchPromotionsRequest query) {
         Pageable pageable = AppUtils.toPageable(query);
         Page<Promotion> promotions = promotionRepository.searchPromotions(query, pageable);
 
@@ -91,6 +91,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     @Override
+    @Transactional
     public PromotionDTO findById(String promotionId) {
         Promotion promotion = promotionRepository.findById(promotionId).orElse(null);
         if (Objects.isNull(promotion)) return null;

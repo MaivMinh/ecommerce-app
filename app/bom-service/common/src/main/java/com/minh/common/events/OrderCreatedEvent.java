@@ -1,6 +1,5 @@
 package com.minh.common.events;
 
-import com.minh.common.DTOs.OrderItemCreateDto;
 import lombok.*;
 
 import java.util.List;
@@ -8,20 +7,14 @@ import java.util.List;
 @Getter
 @Setter
 @AllArgsConstructor
-@Builder
 @NoArgsConstructor
-public class OrderCreatedEvent {
+@Builder
+public class OrderCreatedEvent extends SagaEvent {
     private String orderId;
     private String username;
-    private String shippingAddressId;
-    private Double subTotal;
-    private Double discount;
+    private String currency;
     private Double total;
     private String paymentMethod;
-    private String promotionId;
-    private String voucherId;
-    private String currency;
-    private String note;
-    private List<OrderItemCreateDto> orderItemDtos;
+    private List<OrderItemCreatedEvent> orderItemDtos;
     private String productId;
 }

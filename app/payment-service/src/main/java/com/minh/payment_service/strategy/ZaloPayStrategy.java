@@ -1,5 +1,7 @@
 package com.minh.payment_service.strategy;
 
+import com.minh.common.commands.ProcessPaymentCommand;
+import com.minh.common.commands.RefundProcessedPaymentCommand;
 import com.minh.common.constants.ErrorCode;
 import com.minh.common.events.PaymentProcessedEvent;
 import com.minh.common.message.MessageCommon;
@@ -7,8 +9,8 @@ import com.minh.common.utils.AppUtils;
 import com.minh.payment_service.enums.PaymentProvider;
 import com.minh.payment_service.enums.PaymentStatus;
 import com.minh.payment_service.payload.response.PaymentResponse;
-import com.minh.payment_service.query.DTOs.PaymentMethodDto;
-import com.minh.payment_service.query.entity.Payment;
+import com.minh.payment_service.DTOs.PaymentMethodDto;
+import com.minh.payment_service.entity.Payment;
 import com.minh.payment_service.repository.PaymentRepository;
 import com.minh.payment_service.service.AbstractPaymentStrategy;
 import com.minh.payment_service.service.PaymentMethodService;
@@ -31,33 +33,39 @@ public class ZaloPayStrategy extends AbstractPaymentStrategy {
     }
 
     @Override
-    protected PaymentResponse makePayment(PaymentProcessedEvent request) {
+    protected PaymentResponse makePayment(ProcessPaymentCommand command) {
         /// Logic triển khai thanh toán qua ZaloPay.
-        log.info("Processing payment via ZaloPay for request: {}", request);
+        log.info("Processing payment via ZaloPay for request: {}", command);
 
+        String paymentId = AppUtils.generateUUIDv7();
         try {
-            PaymentMethodDto method = paymentMethodService.findByCode(request.getPaymentMethod());
+            PaymentMethodDto method = paymentMethodService.findByCode(command.getPaymentMethod());
             if (method == null) {
-                throw new RuntimeException(messageCommon.getMessage(ErrorCode.PaymentMethod.NOT_FOUND, request.getPaymentMethod()));
+                throw new RuntimeException(messageCommon.getMessage(ErrorCode.PaymentMethod.NOT_FOUND, command.getPaymentMethod()));
             }
 
             Payment payment = new Payment();
-            payment.setId(request.getPaymentId());
-            payment.setOrderId(request.getOrderId());
-            payment.setTotal(request.getTotal());
-            payment.setPaymentMethodId(request.getPaymentMethod());
+            payment.setId(paymentId);
+            payment.setOrderId(command.getOrderId());
+            payment.setTotal(command.getTotal());
+            payment.setPaymentMethodId(method.getId());
             payment.setStatus(PaymentStatus.COMPLETED);
-            payment.setCurrency(request.getCurrency());
+            payment.setCurrency(command.getCurrency());
             payment.setTransactionId(AppUtils.generateUUIDv7());
             paymentRepository.save(payment);
 
             return PaymentResponse.builder()
-                    .paymentId(request.getPaymentId())
+                    .paymentId(paymentId)
                     .status(HttpStatus.OK.value())
-                    .message("Payment processed successfully via ZaloPay.")
+                    .message("Payment processed successfully via Zalo Pay.")
                     .build();
         } catch (Exception e) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.PAYMENT_FAILED, request.getPaymentId()));
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.PAYMENT_FAILED, paymentId));
         }
+    }
+
+    @Override
+    protected void makeRefund(RefundProcessedPaymentCommand command) {
+
     }
 }

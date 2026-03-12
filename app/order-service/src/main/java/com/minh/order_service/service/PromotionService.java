@@ -3,16 +3,16 @@ package com.minh.order_service.service;
 
 import com.minh.common.response.ResponseData;
 import com.minh.order_service.DTOs.PromotionDTO;
-import com.minh.order_service.command.events.PromotionCreatedEvent;
-import com.minh.order_service.query.queries.GetPromotionsQuery;
-import com.minh.order_service.query.queries.SearchPromotionsQuery;
+import com.minh.order_service.payload.request.GetPromotionsRequest;
+import com.minh.order_service.payload.request.CreatePromotionRequest;
+import com.minh.order_service.payload.request.SearchPromotionsRequest;
 
 public interface PromotionService {
-    void createPromotion(PromotionCreatedEvent event);
+    void createPromotion(CreatePromotionRequest event);
 
-    ResponseData getPromotions(GetPromotionsQuery query);
+    ResponseData getPromotions(GetPromotionsRequest query);
 
-    ResponseData searchPromotions(SearchPromotionsQuery query);
+    ResponseData searchPromotions(SearchPromotionsRequest query);
 
     PromotionDTO findById(String promotionId);
 

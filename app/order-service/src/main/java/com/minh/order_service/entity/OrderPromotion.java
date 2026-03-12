@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 
 @Entity
 @Table(name = "order_promotions")
@@ -19,5 +20,5 @@ public class OrderPromotion extends BaseEntity {
     private String orderId;
     private String promotionId;
     private Boolean isUsed;
-    private Timestamp usedAt;
+    private Instant usedAt;
 }

@@ -1,10 +1,10 @@
 package com.minh.notify_service.service;
 
-import com.minh.common.functions.input.NotifyOrderConfirmedEvent;
-import com.minh.common.functions.input.NotifyOrderRolledBackEvent;
+import com.minh.common.functions.input.NotifyOrderCompletedEvent;
+import com.minh.common.functions.input.NotifyOrderCancelledEvent;
 
 public interface NotificationService {
-    void handleNotifyOrderConfirmed(NotifyOrderConfirmedEvent event);
+    void handleNotifyOrderConfirmed(NotifyOrderCompletedEvent event);
 
-    void handleNotifyOrderRolledBack(NotifyOrderRolledBackEvent event);
+    void handleNotifyOrderCancelled(NotifyOrderCancelledEvent event);
 }
