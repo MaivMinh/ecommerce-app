@@ -1,14 +1,12 @@
 package com.minh.common.events;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class ProductReservationFailedEvent extends SagaEvent{
     private String orderId;
     private String username;

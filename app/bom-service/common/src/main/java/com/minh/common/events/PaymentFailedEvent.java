@@ -1,14 +1,14 @@
-package com.minh.common.commands;
+package com.minh.common.events;
 
 import lombok.*;
 
-@Getter
 @Setter
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class RefundPaymentCommand extends SagaCommand {
+public class PaymentFailedEvent extends SagaEvent {
     private String orderId;
-    private String paymentId;
     private String username;
+    private String errorMsg;
 }

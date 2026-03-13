@@ -3,13 +3,14 @@ package com.minh.payment_service.service.impl;
 import com.minh.common.commands.ProcessPaymentCommand;
 import com.minh.common.commands.RefundProcessedPaymentCommand;
 import com.minh.common.constants.ErrorCode;
+import com.minh.common.events.PaymentFailedEvent;
 import com.minh.common.events.PaymentProcessedEvent;
 import com.minh.common.events.PaymentRefundedEvent;
-import com.minh.common.events.SagaEvent;
 import com.minh.common.kafka.KafkaTopics;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.utils.AppUtils;
 import com.minh.payment_service.entity.Payment;
+import com.minh.payment_service.enums.PaymentMethodType;
 import com.minh.payment_service.enums.PaymentStatus;
 import com.minh.payment_service.repository.PaymentRepository;
 import com.minh.payment_service.service.PaymentProcessingService;
@@ -26,7 +27,7 @@ import org.springframework.util.StringUtils;
 public class PaymentProcessingServiceImpl implements PaymentProcessingService {
     private final PaymentRepository paymentRepository;
     private final MessageCommon messageCommon;
-    private final KafkaTemplate<String, SagaEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private PaymentStrategy paymentStrategy;
 
     @Override
@@ -57,27 +58,18 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
 
         } catch (RuntimeException e) {
             log.error("Payment processing failed for sagaId: {}. Error: {}", command.getSagaId(), e.getMessage());
-            PaymentRefundedEvent event = PaymentRefundedEvent.builder()
+            PaymentFailedEvent event = PaymentFailedEvent.builder()
                     .orderId(command.getOrderId())
                     .username(command.getUsername())
                     .errorMsg(e.getMessage())
                     .build();
             event.setSagaId(command.getSagaId());
             event.setTimestamp(command.getTimestamp());
-            kafkaTemplate.send(KafkaTopics.PAYMENT_REFUNDED,
+            kafkaTemplate.send(KafkaTopics.PAYMENT_FAILED,
                     command.getSagaId(),
                     event
             );
         }
-    }
-
-    @Override
-    public void rollbackProcessedPayment(RefundProcessedPaymentCommand command) {
-        Payment payment = paymentRepository.findById(command.getPaymentId()).orElseThrow(
-                () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.PAYMENT_FAILED, command.getPaymentId()))
-        );
-        payment.setStatus(PaymentStatus.FAILED);
-        paymentRepository.save(payment);
     }
 
     @Override
@@ -92,6 +84,7 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
             PaymentRefundedEvent event = PaymentRefundedEvent.builder()
                     .orderId(command.getOrderId())
                     .username(command.getUsername())
+                    .paymentMethod(command.getPaymentMethod())
                     .build();
             event.setSagaId(command.getSagaId());
             event.setTimestamp(command.getTimestamp());
@@ -101,17 +94,7 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
             );
         } catch (RuntimeException e) {
             log.error("Payment refund failed for sagaId: {}. Error: {}", command.getSagaId(), e.getMessage());
-//            PaymentRefundedEvent event = PaymentRefundedEvent.builder()
-//                    .orderId(command.getOrderId())
-//                    .username(command.getUsername())
-//                    .errorMsg(e.getMessage())
-//                    .build();
-//            event.setSagaId(command.getSagaId());
-//            event.setTimestamp(command.getTimestamp());
-//            kafkaTemplate.send(KafkaTopics.PAYMENT_REFUNDED,
-//                    command.getSagaId(),
-//                    event
-//            );
+            throw e;
         }
     }
 }

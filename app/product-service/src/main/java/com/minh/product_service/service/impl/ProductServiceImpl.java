@@ -145,19 +145,7 @@ public class ProductServiceImpl implements ProductService {
                     .message("Slug không được để trống.")
                     .build();
         }
-        String key = this.createCacheKey(query.getSlug());
-        ProductDTO cachedProduct = (ProductDTO) redisTemplate.opsForValue().get(key);
-        if (Objects.nonNull(cachedProduct)) {
-            log.info("Tồn tại sản phẩm với slug {} trong cache.", query.getSlug());
-            return ResponseData.builder()
-                    .status(HttpStatus.OK.value())
-                    .message(ResponseMessages.SUCCESS)
-                    .data(cachedProduct)
-                    .build();
-        }
-        log.info("Không tìm thấy sản phẩm với slug {} trong cache.", query.getSlug());
 
-        /// Cache miss. Fetch from DB and then cache it and return retrieved data.
         Product product = productRepository.findBySlug(query.getSlug());
         if (Objects.isNull(product)) {
             return ResponseData.builder()
@@ -174,18 +162,11 @@ public class ProductServiceImpl implements ProductService {
         productDTO.setProductVariants(new ArrayList<>(productVariantDTOs));
         productDTO.setImages(productImageDTOs.stream().map(ProductImageDTO::getImageUrl).collect(Collectors.toList()));
 
-        /// Cache the productDTO.
-        redisTemplate.opsForValue().set(key, productDTO, 1800, TimeUnit.SECONDS); // Cache for 30 minutes.
-
         return ResponseData.builder()
                 .status(HttpStatus.OK.value())
                 .message(ResponseMessages.SUCCESS)
                 .data(productDTO)
                 .build();
-    }
-
-    private String createCacheKey(String slug) {
-        return "product:" + slug;
     }
 
     @Override
@@ -581,13 +562,5 @@ public class ProductServiceImpl implements ProductService {
                 .setMessage(ResponseMessages.SUCCESS)
                 .addAllProducts(productInfos)
                 .build();
-    }
-
-    @Override
-    public void handleProductUpdatedEvent(String slug) {
-        /// Thực hiện xóa cache liên quan đến sản phẩm có slug tương ứng.
-        String key = this.createCacheKey(slug);
-        redisTemplate.delete(key);
-        log.info("Đã xóa cache với key: {}", key);
     }
 }

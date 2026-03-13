@@ -3,7 +3,6 @@ package com.minh.order_service.service.impl;
 import com.minh.common.DTOs.OrderItemCreatedRequest;
 import com.minh.common.constants.ErrorCode;
 import com.minh.common.constants.ResponseMessages;
-import com.minh.common.events.OrderCompletionFailedEvent;
 import com.minh.common.events.OrderCreatedEvent;
 import com.minh.common.events.OrderItemCreatedEvent;
 import com.minh.common.functions.input.NotifyOrderCancelledEvent;
@@ -36,6 +35,8 @@ import game_service.GetShippingAddressResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -66,11 +67,15 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentGrpcClient paymentGrpcClient;
     private final PromotionService promotionService;
     private final OrderPromotionRepository orderPromotionRepository;
-
-    private final SagaOrchestrator orchestrator;
+    private SagaOrchestrator orchestrator;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final OrderPromotionService orderPromotionService;
     private final OrderSagaStateService orderSagaStateService;
+
+    @Autowired
+    public void setOrchestrator(@Lazy SagaOrchestrator orchestrator) {
+        this.orchestrator = orchestrator;
+    }
 
     private void rollbackUsedPromotion(String orderId) {
         List<OrderPromotion> orderPromotions = orderPromotionRepository.findAllByOrderId(orderId);
@@ -352,16 +357,17 @@ public class OrderServiceImpl implements OrderService {
                 log.error("Saga {} has already been completed or failed. No need to reject order.", state.getSagaId());
                 return;
             }
-            if (Objects.isNull(state) || !StringUtils.hasText(state.getSagaId()) || !StringUtils.hasText(state.getOrderId())) {
+            if (!StringUtils.hasText(state.getSagaId()) || !StringUtils.hasText(state.getOrderId())) {
                 throw new RuntimeException("Saga state is null or has invalid sagaId");
             }
+            state.setStatus(SagaStatus.FAILED);
             orderSagaStateService.save(state);
 
             /// Update created order.
-            int updatedRows = orderRepository.updateStatusById(OrderStatus.CANCELLED, state.getOrderId());
-            if (updatedRows == 0) {
-                throw new RuntimeException(messageCommon.getMessage(ErrorCode.Order.UPDATE_FAILED, state.getOrderId()));
-            }
+            Order order = orderRepository.findById(state.getOrderId())
+                    .orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.UPDATE_FAILED, state.getOrderId())));
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
 
             /// Delete created order items.
             int removedItems = orderItemService.deleteAllByOrderId(state.getOrderId());
@@ -385,9 +391,9 @@ public class OrderServiceImpl implements OrderService {
                                     .build()
                     ).toList())
                     .build();
-            event.setTemplateCode(NotifyTemplateCode.ORDER_CANCELLED.name());
+            event.setTemplateCode(NotifyTemplateCode.ORDER_FAILED.name());
             event.setRecipient(Map.of("username", state.getUsername()));
-            kafkaTemplate.send(KafkaTopics.NOTIFY_ORDER_CANCELLED, state.getSagaId(), event);
+            kafkaTemplate.send(KafkaTopics.NOTIFY_ORDER_FAILED, state.getSagaId(), event);
         } catch (RuntimeException e) {
             log.error("Error while rejecting order for saga {}: {}", state.getSagaId(), e.getMessage());
         }
@@ -397,7 +403,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = {Exception.class})
     public void completeOrder(OrderSagaState state) {
         if (state.getStatus().equals(SagaStatus.COMPLETED) || state.getStatus().equals(SagaStatus.FAILED)) {
-            log.error("Saga {} has already been completed or failed. No need to reject order.", state.getSagaId());
+            log.error("Saga {} has already been completed or failed. No need to complete order.", state.getSagaId());
             return;
         }
         if (!state.getCurrentStep().equals(SagaStep.PAYMENT_PROCESSED)) {

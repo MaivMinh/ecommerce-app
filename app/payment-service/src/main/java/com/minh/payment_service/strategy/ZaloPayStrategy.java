@@ -66,6 +66,21 @@ public class ZaloPayStrategy extends AbstractPaymentStrategy {
 
     @Override
     protected void makeRefund(RefundProcessedPaymentCommand command) {
+        log.info("Processing refund via ZaloPay for command: {}", command);
+        try {
+            Payment payment = paymentRepository.findById(command.getPaymentId())
+                    .orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.NOT_FOUND, command.getPaymentId())));
 
+            if (!payment.getStatus().equals(PaymentStatus.COMPLETED)) {
+                log.warn("Payment with ID {} is already in status {}. No refund needed.", command.getPaymentId(), payment.getStatus());
+                return; // Không cần thực hiện refund nếu đã failed hoặc refunded
+            }
+
+            payment.setStatus(PaymentStatus.REFUNDED);
+            paymentRepository.save(payment);
+        } catch (Exception e) {
+            log.error("Refund processing failed for paymentId: {}. Error: {}", command.getPaymentId(), e.getMessage());
+            throw new RuntimeException("Refund processing failed for paymentId: " + command.getPaymentId());
+        }
     }
 }

@@ -10,5 +10,6 @@ import lombok.*;
 public class RefundProcessedPaymentCommand extends SagaCommand {
     private String orderId;
     private String paymentId;
+    private String paymentMethod;
     private String username;
 }

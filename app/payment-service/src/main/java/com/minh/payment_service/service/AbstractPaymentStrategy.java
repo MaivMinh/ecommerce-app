@@ -19,7 +19,6 @@ public abstract class AbstractPaymentStrategy implements PaymentStrategy{
     private void validate(ProcessPaymentCommand command) {
         if (!StringUtils.hasText(command.getOrderId())
                 || !StringUtils.hasText(command.getPaymentMethod())
-                || !StringUtils.hasText(command.getProductId())
                 || !StringUtils.hasText(command.getUsername())) {
             log.error("Payment service: Tham số truyền vào không hợp lệ: {}", command);
             throw new IllegalArgumentException("Invalid payment request: missing required fields.");

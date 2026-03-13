@@ -24,7 +24,7 @@ public class NotifyFunctions {
     }
 
     @KafkaListener(
-            topics = KafkaTopics.NOTIFY_ORDER_CANCELLED,
+            topics = KafkaTopics.NOTIFY_ORDER_FAILED,
             groupId = "notify-service"
     )
     @Transactional

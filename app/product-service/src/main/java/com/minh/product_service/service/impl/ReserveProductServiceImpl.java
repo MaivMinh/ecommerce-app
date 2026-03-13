@@ -51,10 +51,25 @@ public class ReserveProductServiceImpl implements ReserveProductService {
                 reserveProducts.add(reserveProduct);
             });
             reserveProductRepository.saveAll(reserveProducts);
-            kafkaTemplate.send(KafkaTopics.PRODUCT_RESERVED, command.getSagaId(),new ProductReservedEvent(command.getOrderId(),command.getPaymentMethod(),command.getTotal(), command.getCurrency(), command.getUsername()));
+            ProductReservedEvent event = ProductReservedEvent.builder()
+                    .orderId(command.getOrderId())
+                    .paymentMethod(command.getPaymentMethod())
+                    .total(command.getTotal())
+                    .currency(command.getCurrency())
+                    .username(command.getUsername())
+                    .build();
+            event.setSagaId(command.getSagaId());
+            event.setTimestamp(command.getTimestamp());
+
+            kafkaTemplate.send(KafkaTopics.PRODUCT_RESERVED, command.getSagaId(), event);
         } catch (RuntimeException e) {
             log.error("Lỗi khi đặt chỗ sản phẩm cho đơn hàng {}: {}", command.getOrderId(), e.getMessage());
-            kafkaTemplate.send(KafkaTopics.PRODUCT_RESERVATION_FAILED, command.getSagaId(), new ProductReservationFailedEvent(command.getOrderId(),command.getUsername(),e.getMessage()));
+            ProductReservationFailedEvent event = ProductReservationFailedEvent.builder()
+                    .orderId(command.getOrderId())
+                    .username(command.getUsername())
+                    .errorMsg(e.getMessage())
+                    .build();
+            kafkaTemplate.send(KafkaTopics.PRODUCT_RESERVATION_FAILED, command.getSagaId(), event);
         }
     }
 
@@ -75,7 +90,12 @@ public class ReserveProductServiceImpl implements ReserveProductService {
             reserveProduct.setStatus(ReserveProductStatus.failed);
             reserveProductRepository.save(reserveProduct);
         });
+        ProductReleasedEvent event = ProductReleasedEvent.builder()
+                .orderId(orderId)
+                .build();
+        event.setSagaId(command.getSagaId());
+        event.setTimestamp(command.getTimestamp());
 
-        kafkaTemplate.send(KafkaTopics.PRODUCT_RELEASED, command.getSagaId(), new ProductReleasedEvent(orderId));
+        kafkaTemplate.send(KafkaTopics.PRODUCT_RELEASED, command.getSagaId(), event);
     }
 }

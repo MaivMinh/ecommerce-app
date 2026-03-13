@@ -33,7 +33,7 @@ spring:
   # /// MYSQL DATABASE CONFIGURATION ///
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_order}

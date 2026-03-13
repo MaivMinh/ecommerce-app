@@ -10,5 +10,7 @@ import lombok.*;
 public class OrderCompletionFailedEvent extends SagaEvent{
     private String orderId;
     private String username;
+    private String paymentMethod;
+    private String paymentId;
     private String errorMsg;
 }

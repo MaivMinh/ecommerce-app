@@ -6,8 +6,6 @@ import com.minh.common.commands.RefundProcessedPaymentCommand;
 public interface PaymentProcessingService {
     void processPayment(ProcessPaymentCommand command);
 
-    void rollbackProcessedPayment(RefundProcessedPaymentCommand command);
-
     void setPaymentStrategy(PaymentStrategy paymentStrategy);
 
     void refundPayment(RefundProcessedPaymentCommand command);

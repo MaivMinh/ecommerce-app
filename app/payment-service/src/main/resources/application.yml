@@ -12,6 +12,8 @@ spring:
   threads:
     virtual:
       enabled: true
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
   sql:
     init:
@@ -28,8 +30,6 @@ spring:
   messages:
     basename: i18n/messages
     encoding: UTF-8
-
-
 
 
 management:

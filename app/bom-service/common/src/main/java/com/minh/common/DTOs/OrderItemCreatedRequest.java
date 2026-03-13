@@ -12,7 +12,6 @@ import lombok.*;
 @NoArgsConstructor
 public class OrderItemCreatedRequest {
     private String id;
-    @NotBlank
     private String orderId;
     @NotBlank
     private String productVariantId;
