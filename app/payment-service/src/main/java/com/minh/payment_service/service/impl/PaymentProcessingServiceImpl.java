@@ -9,6 +9,7 @@ import com.minh.common.kafka.KafkaTopics;
 import com.minh.common.utils.AppUtils;
 import com.minh.payment_service.service.PaymentProcessingService;
 import com.minh.payment_service.service.PaymentStrategy;
+import com.minh.payment_service.service.ProcessedMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,9 +21,14 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class PaymentProcessingServiceImpl implements PaymentProcessingService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final ProcessedMessageService processedMessageService;
 
     @Override
     public void processPayment(ProcessPaymentCommand command, PaymentStrategy strategy) {
+        if (isMessageProcessed(command.getMessageId())) {
+            log.info("Refund command with messageId: {} has already been processed. Skipping.", command.getMessageId());
+            return;
+        }
         try {
             command.setPaymentId(AppUtils.generateUUIDv7());
             strategy.pay(command);
@@ -37,6 +43,7 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
 
             event.setSagaId(command.getSagaId());
             event.setTimestamp(command.getTimestamp());
+            processedMessageService.store(command);
             kafkaTemplate.send(KafkaTopics.PAYMENT_PROCESSED,
                     command.getSagaId(),
                     event
@@ -64,6 +71,10 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
             log.error("Invalid refund payment command: missing sagaId or paymentId");
             return;
         }
+        if (isMessageProcessed(command.getMessageId())) {
+            log.info("Refund command with messageId: {} has already been processed. Skipping.", command.getMessageId());
+            return;
+        }
 
         try {
             strategy.refund(command);
@@ -74,6 +85,7 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
                     .build();
             event.setSagaId(command.getSagaId());
             event.setTimestamp(command.getTimestamp());
+            processedMessageService.store(command);
             kafkaTemplate.send(KafkaTopics.PAYMENT_REFUNDED,
                     command.getSagaId(),
                     event
@@ -82,5 +94,9 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
             log.error("Payment refund failed for sagaId: {}. Error: {}", command.getSagaId(), e.getMessage());
             throw e;
         }
+    }
+
+    private boolean isMessageProcessed(String messageId) {
+        return processedMessageService.isMessageProcessed(messageId);
     }
 }

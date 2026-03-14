@@ -13,10 +13,10 @@ import com.minh.order_service.enums.SagaStatus;
 import com.minh.order_service.enums.SagaStep;
 import com.minh.order_service.service.OrderSagaStateService;
 import com.minh.order_service.service.OrderService;
+import com.minh.order_service.service.OutboxMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +26,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class SagaOrchestrator {
 
     private final com.minh.order_service.repository.OrderSagaStateRepository orderSagaStateRepository;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final OrderService orderService;
     private final OrderSagaStateService orderSagaStateService;
+    private final OutboxMessageService outboxMessageService;
 
     /**
      * Bước 1: Bắt đầu Saga flow khi Order vừa được tạo.
      *
      * @param event: Thông tin event về đơn hàng vừa được tạo.
      */
+    @Transactional
     public void startSaga(OrderCreatedEvent event) {
         log.info("Saga Event [1]: Received OrderCreatedEvent for order [{}]. Starting saga flow.", event.getOrderId());
 
@@ -70,8 +71,7 @@ public class SagaOrchestrator {
 
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
-
-        kafkaTemplate.send(KafkaTopics.PRODUCT_RESERVE, sagaId, command);
+        outboxMessageService.store(command, KafkaTopics.PRODUCT_RESERVE, ReserveProductCommand.class.getName());
         log.info("Saga [{}] started for order [{}]. Sent ReserveProductCommand to Kafka.", sagaId, event.getOrderId());
     }
 
@@ -101,8 +101,7 @@ public class SagaOrchestrator {
                 .build();
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
-
-        kafkaTemplate.send(KafkaTopics.PAYMENT_PROCESS, state.getSagaId(), command);
+        outboxMessageService.store(command, KafkaTopics.PAYMENT_PROCESS, ProcessPaymentCommand.class.getName());
         log.info("Saga [{}] product reserved for order [{}]. Sent ProcessPaymentCommand to Kafka.", state.getSagaId(), state.getOrderId());
     }
 
@@ -138,7 +137,7 @@ public class SagaOrchestrator {
 
             saved.setCurrentStep(SagaStep.ORDER_COMPLETION_FAILED);
             orderSagaStateRepository.save(saved);
-            kafkaTemplate.send(KafkaTopics.ORDER_COMPLETION_FAILED, state.getSagaId(), failedEvent);
+            outboxMessageService.store(failedEvent, KafkaTopics.ORDER_COMPLETION_FAILED, OrderCompletionFailedEvent.class.getName());
         }
     }
 
@@ -167,8 +166,7 @@ public class SagaOrchestrator {
                 .build();
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
-
-        kafkaTemplate.send(KafkaTopics.PAYMENT_REFUND, state.getSagaId(), command);
+        outboxMessageService.store(command, KafkaTopics.PAYMENT_REFUND, RefundProcessedPaymentCommand.class.getName());
         log.info("Saga [{}] processing compensation for order [{}]. Sent RefundProcessedPaymentCommand to Kafka.", state.getSagaId(), state.getOrderId());
     }
 
@@ -194,8 +192,7 @@ public class SagaOrchestrator {
                 .build();
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
-
-        kafkaTemplate.send(KafkaTopics.PRODUCT_RELEASE, state.getSagaId(), command);
+        outboxMessageService.store(command, KafkaTopics.PRODUCT_RELEASE, ReleaseProductCommand.class.getName());
         log.info("Saga [{}] compensation completed for order [{}].", state.getSagaId(), state.getOrderId());
     }
 
@@ -225,7 +222,7 @@ public class SagaOrchestrator {
         command.setTimestamp(event.getTimestamp());
 
         /// Thanh toán bị refund, cần release lại sản phẩm đã reserve.
-        kafkaTemplate.send(KafkaTopics.PRODUCT_RELEASE, state.getSagaId(), command);
+        outboxMessageService.store(command, KafkaTopics.PRODUCT_RELEASE, ReleaseProductCommand.class.getName());
         log.info("Saga [{}] processing compensation for order [{}]. Sent ProductReleaseCommand to Kafka.", state.getSagaId(), state.getOrderId());
     }
 

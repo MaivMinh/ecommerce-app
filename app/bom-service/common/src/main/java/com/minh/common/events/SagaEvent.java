@@ -11,5 +11,6 @@ import java.time.Instant;
 @NoArgsConstructor
 public class SagaEvent {
     private String sagaId;
+    private String messageId;
     private Instant timestamp;
 }
