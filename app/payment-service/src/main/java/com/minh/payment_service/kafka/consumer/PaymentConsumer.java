@@ -39,8 +39,7 @@ public class PaymentConsumer {
     public void handleProcessPaymentCommand(ProcessPaymentCommand command) {
         log.info("Received ProcessPaymentCommand for sagaId: {}", command.getSagaId());
         PaymentStrategy strategy = this.getPaymentStrategy(command.getPaymentMethod());
-        service.setPaymentStrategy(strategy);
-        service.processPayment(command);
+        service.processPayment(command, strategy);
     }
 
 
@@ -53,7 +52,6 @@ public class PaymentConsumer {
     public void handleRefundPaymentCommand(RefundProcessedPaymentCommand command) {
         log.info("Received RefundPaymentCommand for sagaId: {}", command.getSagaId());
         PaymentStrategy strategy = this.getPaymentStrategy(command.getPaymentMethod());
-        service.setPaymentStrategy(strategy);
-        service.refundPayment(command);
+        service.refundPayment(command, strategy);
     }
 }

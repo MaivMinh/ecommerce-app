@@ -2,17 +2,11 @@ package com.minh.payment_service.service.impl;
 
 import com.minh.common.commands.ProcessPaymentCommand;
 import com.minh.common.commands.RefundProcessedPaymentCommand;
-import com.minh.common.constants.ErrorCode;
 import com.minh.common.events.PaymentFailedEvent;
 import com.minh.common.events.PaymentProcessedEvent;
 import com.minh.common.events.PaymentRefundedEvent;
 import com.minh.common.kafka.KafkaTopics;
-import com.minh.common.message.MessageCommon;
 import com.minh.common.utils.AppUtils;
-import com.minh.payment_service.entity.Payment;
-import com.minh.payment_service.enums.PaymentMethodType;
-import com.minh.payment_service.enums.PaymentStatus;
-import com.minh.payment_service.repository.PaymentRepository;
 import com.minh.payment_service.service.PaymentProcessingService;
 import com.minh.payment_service.service.PaymentStrategy;
 import lombok.RequiredArgsConstructor;
@@ -25,21 +19,13 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class PaymentProcessingServiceImpl implements PaymentProcessingService {
-    private final PaymentRepository paymentRepository;
-    private final MessageCommon messageCommon;
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private PaymentStrategy paymentStrategy;
 
     @Override
-    public void setPaymentStrategy(PaymentStrategy paymentStrategy) {
-        this.paymentStrategy = paymentStrategy;
-    }
-
-    @Override
-    public void processPayment(ProcessPaymentCommand command) {
+    public void processPayment(ProcessPaymentCommand command, PaymentStrategy strategy) {
         try {
             command.setPaymentId(AppUtils.generateUUIDv7());
-            paymentStrategy.pay(command);
+            strategy.pay(command);
             PaymentProcessedEvent event = PaymentProcessedEvent.builder()
                     .orderId(command.getOrderId())
                     .username(command.getUsername())
@@ -73,14 +59,14 @@ public class PaymentProcessingServiceImpl implements PaymentProcessingService {
     }
 
     @Override
-    public void refundPayment(RefundProcessedPaymentCommand command) {
+    public void refundPayment(RefundProcessedPaymentCommand command, PaymentStrategy strategy) {
         if (!StringUtils.hasText(command.getSagaId()) || !StringUtils.hasText(command.getPaymentId())) {
             log.error("Invalid refund payment command: missing sagaId or paymentId");
             return;
         }
 
         try {
-            paymentStrategy.refund(command);
+            strategy.refund(command);
             PaymentRefundedEvent event = PaymentRefundedEvent.builder()
                     .orderId(command.getOrderId())
                     .username(command.getUsername())

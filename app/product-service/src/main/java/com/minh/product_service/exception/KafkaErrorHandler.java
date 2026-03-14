@@ -3,15 +3,14 @@ package com.minh.product_service.exception;
 
 import com.minh.common.commands.ReleaseProductCommand;
 import com.minh.common.commands.ReserveProductCommand;
-import com.minh.common.commands.SagaCommand;
 import com.minh.common.events.ProductReservationFailedEvent;
 import com.minh.common.kafka.KafkaTopics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 import org.springframework.stereotype.Service;
-import org.springframework.util.backoff.FixedBackOff;
 
 @Slf4j
 @Service
@@ -19,6 +18,11 @@ public class KafkaErrorHandler {
 
     @Bean
     public DefaultErrorHandler productKafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
+
+        ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
+        backOff.setInitialInterval(2000L);
+        backOff.setMultiplier(2.0);
+        backOff.setMaxInterval(15000L);
 
         return new DefaultErrorHandler(
                 (record, exception) -> {
@@ -44,7 +48,7 @@ public class KafkaErrorHandler {
                         log.error("Received unknown message type: {}", message.getClass().getName());
                     }
                 },
-                new FixedBackOff(5000L, 3)
+                backOff
         );
     }
 }
