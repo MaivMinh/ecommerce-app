@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -93,8 +94,10 @@ public class NotificationServiceImpl implements NotificationService {
             return;
         } catch (RuntimeException e) {
             log.error("Lỗi khi gửi email cho recipients: {}", recipient.get("username"), e);
-            nsl.setStatus(NotificationStatus.FAILED);
-            nsl.setLastError(e.getMessage());
+            if (Objects.nonNull(nsl)) {
+                nsl.setStatus(NotificationStatus.FAILED);
+                nsl.setLastError(e.getMessage());
+            }
             return;
         }
         notificationSendLogRepository.save(nsl);
@@ -111,7 +114,7 @@ public class NotificationServiceImpl implements NotificationService {
                     .setUsername(username)
                     .build();
             return supportGrpcClient.getUserInfo(userReq);
-        }   catch (Exception e) {
+        } catch (Exception e) {
             log.error("Lỗi khi gọi gRPC tới support-service để lấy thông tin user cho username: {}", username, e);
             return null;
         }
@@ -156,6 +159,7 @@ public class NotificationServiceImpl implements NotificationService {
     private NotifyEvent prepareDataOrder(NotifyEvent event) {
         /// Lấy thông tin tên của người nhận.
         try {
+            event.setParams(new HashMap<>());
             GetUserInfoResponse userRes = this.getUserInfo(event.getRecipient().get("username"));
             if (Objects.isNull(userRes)) {
                 throw new RuntimeException("Lấy thông tin user thất bại cho username: " + event.getRecipient().get("username"));
@@ -166,34 +170,44 @@ public class NotificationServiceImpl implements NotificationService {
             if (event instanceof NotifyOrderCompletedEvent
                     || event instanceof NotifyOrderCancelledEvent) {
                 List<OrderedItem> items;
-                if (event instanceof NotifyOrderCompletedEvent) {
-                    items = ((NotifyOrderCompletedEvent) event).getItems();
+                if (event instanceof NotifyOrderCompletedEvent event1) {
+                    items = event1.getItems();
+                    event.getParams().put("orderId", event1.getOrderId());
+                } else if (event instanceof NotifyOrderCancelledEvent event2) {
+                    items = event2.getItems();
+                    event.getParams().put("orderId", event2.getOrderId());
                 } else {
-                    items = ((NotifyOrderCancelledEvent) event).getItems();
+                    log.error("Sự kiện không phải là NotifyOrderCompletedEvent hoặc NotifyOrderCancelledEvent: {}", event);
+                    throw new RuntimeException("Sự kiện không hợp lệ, không phải là NotifyOrderCompletedEvent hoặc NotifyOrderCancelledEvent.");
                 }
                 List<OrderedItem> processedItems = this.processOrderedItems(items);
                 if (event instanceof NotifyOrderCompletedEvent) {
                     ((NotifyOrderCompletedEvent) event).setItems(processedItems);
+                    event.getParams().put("items", processedItems);
                 } else {
                     ((NotifyOrderCancelledEvent) event).setItems(processedItems);
+                    event.getParams().put("items", processedItems);
                 }
             }
 
             /// Tính lại tổng giá trị đơn hàng dựa trên các item đã được cập nhật thông tin.
             double total = 0.0;
             List<OrderedItem> items;
-            if (event instanceof NotifyOrderCompletedEvent) {
-                items = ((NotifyOrderCompletedEvent) event).getItems();
+            if (event instanceof NotifyOrderCompletedEvent event1) {
+                items = event1.getItems();
                 for (OrderedItem item : items) {
                     total += item.getPrice() * item.getQuantity();
                 }
-                ((NotifyOrderCompletedEvent) event).setTotal(total);
+                event.getParams().put("total", total);
+            } else if (event instanceof NotifyOrderCancelledEvent event2) {
+                items = event2.getItems();
+                for (OrderedItem item : items) {
+                    total += item.getPrice() * item.getQuantity();
+                }
+                event.getParams().put("total", total);
             } else {
-                items = ((NotifyOrderCancelledEvent) event).getItems();
-                for (OrderedItem item : items) {
-                    total += item.getPrice() * item.getQuantity();
-                }
-                ((NotifyOrderCancelledEvent) event).setTotal(total);
+                log.error("Sự kiện không phải là NotifyOrderCompletedEvent hoặc NotifyOrderCancelledEvent: {}", event);
+                throw new RuntimeException("Sự kiện không hợp lệ, không phải là NotifyOrderCompletedEvent hoặc NotifyOrderCancelledEvent.");
             }
             return event;
         } catch (Exception e) {

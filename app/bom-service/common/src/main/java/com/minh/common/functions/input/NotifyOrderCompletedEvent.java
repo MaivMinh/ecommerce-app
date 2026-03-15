@@ -15,6 +15,7 @@ public class NotifyOrderCompletedEvent extends NotifyEvent {
     private String orderId;
     private List<OrderedItem> items;
 
+
     public void setTemplateCode(String templateCode) {
         super.setTemplateCode(templateCode);
     }

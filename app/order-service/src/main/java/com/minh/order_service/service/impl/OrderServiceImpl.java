@@ -393,6 +393,10 @@ public class OrderServiceImpl implements OrderService {
                     .build();
             event.setTemplateCode(NotifyTemplateCode.ORDER_FAILED.name());
             event.setRecipient(Map.of("username", state.getUsername()));
+            event.setMetaData(new HashMap<>());
+            event.getMetaData().put("createdAt", order.getCreatedAt());
+            event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/");
+            event.setRecipient(Map.of("username", state.getUsername()));
             kafkaTemplate.send(KafkaTopics.NOTIFY_ORDER_FAILED, state.getSagaId(), event);
         } catch (RuntimeException e) {
             log.error("Error while rejecting order for saga {}: {}", state.getSagaId(), e.getMessage());
@@ -436,6 +440,9 @@ public class OrderServiceImpl implements OrderService {
                 ).toList())
                 .build();
         event.setTemplateCode(NotifyTemplateCode.ORDER_CONFIRMATION.name());
+        event.setMetaData(new HashMap<>());
+        event.getMetaData().put("createdAt", order.getCreatedAt());
+        event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/");
         event.setRecipient(Map.of("username", state.getUsername()));
         kafkaTemplate.send(KafkaTopics.ORDER_COMPLETED, state.getSagaId(), event);
     }

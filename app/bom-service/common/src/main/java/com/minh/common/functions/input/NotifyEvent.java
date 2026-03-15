@@ -12,4 +12,5 @@ public class NotifyEvent {
     private String templateCode;
     private Map<String, String> recipient;
     private Map<String, Object> metaData;
+    private Map<String, Object> params;
 }
