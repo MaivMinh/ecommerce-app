@@ -1,4 +1,4 @@
-package com.minh.notify_service.functions;
+package com.minh.notify_service.kafka.consumer;
 
 import com.minh.common.functions.input.NotifyOrderCancelledEvent;
 import com.minh.common.functions.input.NotifyOrderCompletedEvent;
@@ -11,12 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class NotifyFunctions {
+public class NotifyConsumer {
     private final NotificationService service;
 
     @KafkaListener(
             topics = KafkaTopics.ORDER_COMPLETED,
-            groupId = "notify-service"
+            groupId = "notify-service",
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handleNotifyOrderCompleted(NotifyOrderCompletedEvent event) {
@@ -25,7 +26,8 @@ public class NotifyFunctions {
 
     @KafkaListener(
             topics = KafkaTopics.NOTIFY_ORDER_FAILED,
-            groupId = "notify-service"
+            groupId = "notify-service",
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handleNotifyOrderCancelled(NotifyOrderCancelledEvent event) {

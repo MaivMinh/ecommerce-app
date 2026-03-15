@@ -7,6 +7,7 @@ public final class KafkaTopics {
     public static final String NOTIFY_ORDER_FAILED = "notify.order.failed";
 
     public static final String GLOBAL_TECHNICAL_DLT = "global.technical_dlt";
+    public static final String NOTIFICATION_FAILED_DLT = "notification.failed.dlt";
 
     // Order Saga Topics
     public static final String ORDER_COMPLETED = "order.completed";

@@ -59,7 +59,6 @@ public class NotificationServiceImpl implements NotificationService {
             log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderCompletedEvent: {}", event);
             return;
         }
-
         if (!StringUtils.hasText(event.getTemplateCode())) {
             log.error("Template code bị trống trong sự kiện NotifyOrderCompletedEvent: {}", event);
             return;
@@ -92,6 +91,7 @@ public class NotificationServiceImpl implements NotificationService {
             nsl.setStatus(NotificationStatus.SENT);
             nsl.setSentAt(LocalDateTime.now());
         } catch (IOException | TemplateException e) {
+            /// Business logic error -> Không phải lỗi do hệ thống/ hạ tầng... Nên không cần lưu message này để retry, mà chỉ cần log lại để dev có thể fix mẫu template nếu cần thiết.
             log.error("Lỗi khi kết xuất mẫu thông báo cho templateCode: {}", templateCode, e);
             return;
         } catch (RuntimeException e) {
@@ -100,10 +100,9 @@ public class NotificationServiceImpl implements NotificationService {
                 nsl.setStatus(NotificationStatus.FAILED);
                 nsl.setLastError(e.getMessage());
             }
-            return;
+            throw new RuntimeException("Lỗi khi gửi email cho recipients: " + recipient.get("username") + ", error: " + e.getMessage());
         }
         notificationSendLogRepository.save(nsl);
-
     }
 
     private GetUserInfoResponse getUserInfo(String username) {
@@ -229,7 +228,6 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void handleNotifyOrderCancelled(NotifyOrderCancelledEvent event) {
-        log.info("Xử lý sự kiện NotifyOrderCancelledEvent: {}", event);
         if (!StringUtils.hasText(event.getTemplateCode())) {
             log.error("Template code bị trống trong sự kiện NotifyOrderCompletedEvent: {}", event);
             return;
@@ -267,13 +265,16 @@ public class NotificationServiceImpl implements NotificationService {
             nsl.setStatus(NotificationStatus.SENT);
             nsl.setSentAt(LocalDateTime.now());
         } catch (IOException | TemplateException e) {
+            /// Business logic error -> Không phải lỗi do hệ thống/ hạ tầng... Nên không cần lưu message này để retry, mà chỉ cần log lại để dev có thể fix mẫu template nếu cần thiết.
             log.error("Lỗi khi kết xuất mẫu thông báo cho templateCode: {}", templateCode, e);
             return;
         } catch (RuntimeException e) {
             log.error("Lỗi khi gửi email cho recipients: {}", recipient.get("username"), e);
-            nsl.setStatus(NotificationStatus.FAILED);
-            nsl.setLastError(e.getMessage());
-            return;
+            if (Objects.nonNull(nsl)) {
+                nsl.setStatus(NotificationStatus.FAILED);
+                nsl.setLastError(e.getMessage());
+            }
+            throw new RuntimeException("Lỗi khi gửi email cho recipients: " + recipient.get("username") + ", error: " + e.getMessage());
         }
         notificationSendLogRepository.save(nsl);
     }
