@@ -94,7 +94,7 @@ public class NotificationServiceImpl implements NotificationService {
             /// Business logic error -> Không phải lỗi do hệ thống/ hạ tầng... Nên không cần lưu message này để retry, mà chỉ cần log lại để dev có thể fix mẫu template nếu cần thiết.
             log.error("Lỗi khi kết xuất mẫu thông báo cho templateCode: {}", templateCode, e);
             return;
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             log.error("Lỗi khi gửi email cho recipients: {}", recipient.get("username"), e);
             if (Objects.nonNull(nsl)) {
                 nsl.setStatus(NotificationStatus.FAILED);
@@ -268,7 +268,7 @@ public class NotificationServiceImpl implements NotificationService {
             /// Business logic error -> Không phải lỗi do hệ thống/ hạ tầng... Nên không cần lưu message này để retry, mà chỉ cần log lại để dev có thể fix mẫu template nếu cần thiết.
             log.error("Lỗi khi kết xuất mẫu thông báo cho templateCode: {}", templateCode, e);
             return;
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             log.error("Lỗi khi gửi email cho recipients: {}", recipient.get("username"), e);
             if (Objects.nonNull(nsl)) {
                 nsl.setStatus(NotificationStatus.FAILED);
