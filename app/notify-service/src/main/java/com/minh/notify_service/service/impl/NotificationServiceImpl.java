@@ -23,6 +23,7 @@ import game_service.GetUserInfoResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import product_service.FindProductInfoByProductVariantIdRequest;
 import product_service.FindProductInfoByProductVariantIdResponse;
@@ -51,6 +52,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final EmailService emailService;
 
     @Override
+    @Transactional
     public void handleNotifyOrderConfirmed(NotifyOrderCompletedEvent event) {
         NotifyEvent data = prepareDataOrder(event);
         if (Objects.isNull(data)) {
@@ -225,6 +227,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
     public void handleNotifyOrderCancelled(NotifyOrderCancelledEvent event) {
         log.info("Xử lý sự kiện NotifyOrderCancelledEvent: {}", event);
         if (!StringUtils.hasText(event.getTemplateCode())) {
