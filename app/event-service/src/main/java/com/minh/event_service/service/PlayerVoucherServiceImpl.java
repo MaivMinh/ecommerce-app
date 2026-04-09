@@ -9,6 +9,7 @@ import com.minh.event_service.repository.PlayerVoucherRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
@@ -39,6 +40,7 @@ public class PlayerVoucherServiceImpl implements PlayerVoucherService {
     }
 
     @Override
+    @Transactional
     public List<PlayerVoucherResponse> assignVoucherToUserBatch(List<PlayerVoucher> data) {
         if (CollectionUtils.isEmpty(data)) return List.of();
         List<PlayerVoucher> savedEntities = playerVoucherRepository.saveAll(data);

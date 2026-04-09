@@ -169,12 +169,13 @@ resilience4j:
     instances:
       productService:
         registerHealthIndicator: true
-        slidingWindowSize: 10
-        minimum-number-of-calls: 10
-        permittedNumberOfCallsInHalfOpenState: 3
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        waitDurationInOpenState: 10000
-        failureRateThreshold: 70
+        slidingWindowSize: 10 # Số lượng cuộc gọi được theo dõi. 10 cuộc gọi gần nhất.
+        minimum-number-of-calls: 10 # Số lượng yêu cầu tối thiểu để Circuit breaker bắt đầu tính tỷ lệ fail.
+        permittedNumberOfCallsInHalfOpenState: 3  # Số lượng cuộc gọi được phép thực hiện khi Circuit breaker ở trạng thái Half-Open. Nếu vượt quá số này, Circuit breaker sẽ chuyển sang trạng thái Open nếu tỷ lệ lỗi vượt quá ngưỡng.
+        automaticTransitionFromOpenToHalfOpenEnabled: true # Cho phép tự động chuyển từ trạng thái Open sang Half-Open sau một khoảng thời gian nhất định.
+        waitDurationInOpenState: 10000 # Khoảng thời gian (tính bằng milliseconds) mà Circuit breaker sẽ ở trạng thái Open trước khi tự động chuyển sang Half-Open để kiểm tra xem dịch vụ đã ổn định trở lại hay chưa.
+        failureRateThreshold: 70  # Ngưỡng tỷ lệ lỗi (tính bằng phần trăm) mà nếu vượt quá, Circuit breaker sẽ chuyển sang trạng thái Open. Ví dụ: nếu 70% số cuộc gọi thất bại, Circuit breaker sẽ mở và ngăn chặn các cuộc gọi tiếp theo đến dịch vụ cho đến khi nó được kiểm tra lại.
+
       cartService:
         registerHealthIndicator: true
         slidingWindowSize: 10

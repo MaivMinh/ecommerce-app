@@ -24,7 +24,8 @@ public class RealtimeEventConsumer {
 
     @KafkaListener(
             topics = {"event.realtime", "event.player.participate", "event.player.left"},
-            groupId = "realtime-gateway"
+            groupId = "realtime-gateway",
+            containerFactory = "kafkaListenerContainerFactory"
     )
     public void consume(String message) {
         try {

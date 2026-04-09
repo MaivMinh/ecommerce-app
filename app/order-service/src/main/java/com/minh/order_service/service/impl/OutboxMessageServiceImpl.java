@@ -11,12 +11,15 @@ import com.minh.order_service.repository.OutboxMessageRepository;
 import com.minh.order_service.service.OutboxMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.network.Send;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -74,22 +77,32 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
                     case "com.minh.common.commands.ReserveProductCommand":
                         ReserveProductCommand command = objectMapper.readValue(message.getPayload(), ReserveProductCommand.class);
                         command.setMessageId(message.getId());
-                        kafkaTemplate.send(message.getTopic(), command.getSagaId(), command);
+                        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(message.getTopic(), command.getSagaId(), command);
+                        this.handleSendResult(future, message);
                         break;
                     case "com.minh.common.commands.ProcessPaymentCommand":
                         ProcessPaymentCommand ppcCommand = objectMapper.readValue(message.getPayload(), ProcessPaymentCommand.class);
                         ppcCommand.setMessageId(message.getId());
-                        kafkaTemplate.send(message.getTopic(), ppcCommand.getSagaId(), ppcCommand);
+                        this.handleSendResult(
+                                kafkaTemplate.send(message.getTopic(), ppcCommand.getSagaId(), ppcCommand),
+                                message
+                        );
                         break;
                     case "com.minh.common.commands.RefundProcessedPaymentCommand":
                         RefundProcessedPaymentCommand rppCommand = objectMapper.readValue(message.getPayload(), RefundProcessedPaymentCommand.class);
                         rppCommand.setMessageId(message.getId());
-                        kafkaTemplate.send(message.getTopic(), rppCommand.getSagaId(), rppCommand);
+                        this.handleSendResult(
+                                kafkaTemplate.send(message.getTopic(), rppCommand.getSagaId(), rppCommand),
+                                message
+                        );
                         break;
                     case "com.minh.common.commands.ReleaseProductCommand":
                         ReleaseProductCommand rpcCommand = objectMapper.readValue(message.getPayload(), ReleaseProductCommand.class);
                         rpcCommand.setMessageId(message.getId());
-                        kafkaTemplate.send(message.getTopic(), rpcCommand.getSagaId(), rpcCommand);
+                        this.handleSendResult(
+                                kafkaTemplate.send(message.getTopic(), rpcCommand.getSagaId(), rpcCommand),
+                                message
+                        );
                         break;
                     default:
                         throw new RuntimeException("Unknown command class: " + message.getClassName());
@@ -102,7 +115,10 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
                 switch (message.getClassName()) {
                     case "com.minh.common.events.OrderCompletionFailedEvent":
                         OrderCompletionFailedEvent orderCompletionFailedEvent = objectMapper.readValue(message.getPayload(), OrderCompletionFailedEvent.class);
-                        kafkaTemplate.send(message.getTopic(), orderCompletionFailedEvent.getSagaId(), orderCompletionFailedEvent);
+                        this.handleSendResult(
+                                kafkaTemplate.send(message.getTopic(), orderCompletionFailedEvent.getSagaId(), orderCompletionFailedEvent),
+                                message
+                        );
                         break;
                     default:
                         throw new RuntimeException("Unknown event class: " + message.getClassName());
@@ -111,8 +127,19 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
                 throw new RuntimeException("Failed to deserialize event payload", e);
             }
         }
-        message.setProcessed(Boolean.TRUE);
-        message.setProcessedAt(Instant.now());
-        repository.save(message);
+    }
+
+    private void handleSendResult(CompletableFuture<SendResult<String, Object>> future, OutboxMessage message) {
+        future.whenComplete((result, ex) -> {
+            if (ex == null) {
+                /// ex == null -> Success.
+                message.setProcessed(Boolean.TRUE);
+                message.setProcessedAt(Instant.now());
+                repository.save(message);
+                ///  nếu dùng Redis lock, thì chỗ này sẽ release lock đó. Vì lúc này status mới của message đã được cập nhật là xử lý dưới DB rồi.
+            } else {
+                log.error("Failed to publish message with ID: {}. Error: {}", message.getId(), ex.getMessage());
+            }
+        });
     }
 }

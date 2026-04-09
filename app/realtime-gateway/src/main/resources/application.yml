@@ -7,6 +7,8 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   # /// MYSQL DATABASE CONFIGURATION ///
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   jpa:
     hibernate:
       ddl-auto: update
@@ -18,10 +20,6 @@ spring:
   threads:
     virtual:
       enabled: true
-  kafka:
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   messages:
     basename: i18n/messages
     encoding: UTF-8

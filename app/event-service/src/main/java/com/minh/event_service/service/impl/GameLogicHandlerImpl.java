@@ -82,7 +82,7 @@ public class GameLogicHandlerImpl implements GameLogicHandler {
     }
 
     private boolean isMilestone(int i) {
-        return (i == 3 || i == 5 || i == 8 || i == 1);
+        return (i == 3 || i == 5 || i == 8);
     }
 
     @Override

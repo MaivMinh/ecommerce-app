@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minh.realtime_gateway.DTOs.GameEvent;
 import com.minh.realtime_gateway.DTOs.RealtimeEvent;
 import com.minh.realtime_gateway.DTOs.WsMessage;
+import com.minh.realtime_gateway.kafka.producer.GameEventProducer;
 import com.minh.realtime_gateway.session.SessionRegistry;
 import io.swagger.v3.core.util.Json;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class GameWebsocketHandler implements WebSocketHandler {
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final GameEventProducer gameEventProducer;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -97,13 +99,8 @@ public class GameWebsocketHandler implements WebSocketHandler {
 
         /// Handle incoming messages when game is running.
         if (wsMessage.getType().equals("PLAYER_ANSWER")) {
-            kafkaTemplate.send(
-                    "event.game.answer",
-                    wsMessage.getEventId(),
-                    objectMapper.writeValueAsString(wsMessage)
-            );
+            gameEventProducer.sendGameAnswer(wsMessage);
         }
-
     }
 
     @Override
