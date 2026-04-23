@@ -14,9 +14,8 @@ public class KeycloakRoleConverter implements Converter<Jwt, AbstractAuthenticat
 
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
-        Map<String, Object> resourceAccess = (Map<String, Object>) jwt.getClaims().get("resource_access"); // Lấy roles từ realm_access
-        Map<String, Object> clientAccess = (Map<String, Object>) resourceAccess.get("e-commerce");
-        List<String> roles = (List<String>) clientAccess.get("roles");
+        Map<String, Object> realmAccess = (Map<String, Object>) jwt.getClaims().get("realm_access"); // Lấy roles từ realm_access
+        List<String> roles = (List<String>) realmAccess.get("roles");
 
         var authorities = roles.stream()
                 .map(role -> "ROLE_" + role) // Bắt buộc ROLE_ prefix để .hasRole() hoạt động

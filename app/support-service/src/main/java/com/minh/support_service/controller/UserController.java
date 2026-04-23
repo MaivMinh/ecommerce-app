@@ -21,6 +21,12 @@ public class UserController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
+    @PostMapping(value = "/profile")
+    public ResponseEntity<ResponseData> createProfile(@RequestBody UserDto dto) {
+        ResponseData response = userService.createProfile(dto);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
     @PutMapping(value = "/profile")
     public ResponseEntity<ResponseData> updateProfile(@RequestBody UserDto dto) {
         ResponseData response = userService.updateProfile(dto);

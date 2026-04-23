@@ -9,6 +9,6 @@ public interface UserService {
     ResponseData updateProfile(UserDto dto);
 
     UserDto findByUsername(String username);
-//
-//    GetShippingAddressResponse getShippingAddress(GetShippingAddressRequest request);
+
+    ResponseData createProfile(UserDto dto);
 }
