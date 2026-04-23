@@ -1,6 +1,7 @@
 package com.minh.order_service.exception;
 
 
+import com.minh.common.kafka.KafkaTopics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DefaultErrorHandler;
@@ -20,7 +21,7 @@ public class KafkaErrorHandler {
 
         return new DefaultErrorHandler(
                 (record, ex) -> kafkaTemplate.send(
-                        "ORCHESTRATOR_DLT",
+                        KafkaTopics.GLOBAL_TECHNICAL_DLT,
                         (String) record.key(),
                         record.value()
                 ),

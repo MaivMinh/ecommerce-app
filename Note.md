@@ -8,4 +8,14 @@ a. Kafka Config.
 - Sau khi cấu hình KafkaErrorHandler xong, thì cần thêm nó vào trong @KafkaListener, nếu không Listener này sẽ dùng DefaultErrorHandler mặc định của Spring Kafka.
 -> Xem chi tiết ở PaymentConsumer.java
 
-b. Triển khai Outbox pattern với Kafka.
+2. **Triển khai OAuth2 + OIDC**
+a. Cấu hình Keycloak.
+- Ở phần này, thì nên chú ý mục _Valid redirect URIs_ và _Valid post logout redirect URIs_, chú ý phải có phần wildcard * ở cuối, nếu không sẽ gặp lỗi khi đăng nhập hoặc đăng xuất. Ví dụ: http://localhost:8080/*.
+b. Sự khác biệt của access_token & id_token trong Keycloak.
+- Trong Keycloak, nhìn chung các thông tin được extract từ 2 loại token này khá giống nhau và thông thường là access_token = id_token + roles/ permissions.
+- Tuy nhiên, vẫn phải luôn tách biệt vai trò rõ ràng của 2 loại này:
+- access_token: được sử dụng để xác thực và ủy quyền truy cập vào các tài nguyên bảo vệ. Nó chứa thông tin về người dùng, vai trò, và các quyền hạn mà người dùng có. Access token thường được gửi trong header của các yêu cầu HTTP để truy cập vào các API hoặc dịch vụ.
+- Nói cách khác: access token cho phép request có được phép đi vào một tài nguyên nào đó hay không, và request này có quyền hạn nào (gọi được/ sử dụng được các API nào).
+- id_token: được sử dụng với mục đích nhận diện người dùng. Nó chứa thông tin về người dùng như tên, email, và các thuộc tính khác. ID token thường được sử dụng trong quá trình đăng nhập để xác định danh tính của người dùng và cung cấp thông tin về người dùng cho ứng dụng. ID Token thường được sử dụng chủ yếu ở phía Client, Client web thường dùng thông tin này để tạo mới một hồ sơ/ record cho hệ thống hoặc để hiển thị thông tin người dùng trên giao diện.
+- Nói cách khác: id token chỉ đơn thuần là để nhận diện người dùng, nó không có quyền hạn gì cả, và nó cũng không được sử dụng để truy cập vào tài nguyên nào cả. Nó chỉ đơn thuần là một token chứa thông tin về người dùng, và được sử dụng để xác định danh tính của người dùng.
+- Trong một số trường hợp, nếu hệ thống có yêu cầu về việc xác thực và ủy quyền truy cập vào các tài nguyên bảo vệ, thì chúng ta sẽ sử dụng access_token để xác thực và ủy quyền truy cập vào các tài nguyên bảo vệ. Còn nếu hệ thống chỉ cần xác định danh tính của người dùng, thì chúng ta sẽ sử dụng id_token để xác định danh tính của người dùng. 

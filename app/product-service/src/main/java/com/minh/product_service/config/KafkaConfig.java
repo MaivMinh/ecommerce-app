@@ -41,10 +41,10 @@ public class KafkaConfig {
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        config.put(ProducerConfig.COMPRESSION_LZ4_LEVEL_CONFIG, Boolean.TRUE);
 
-        // Đảm bảo message được gửi đúng thứ tự trong cùng partition
         config.put(ProducerConfig.ACKS_CONFIG, "all");
-        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        config.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, Boolean.TRUE);
         return new DefaultKafkaProducerFactory<>(config);
     }
 
@@ -54,7 +54,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConsumerFactory<String, SagaEvent> consumerFactory() {
+    public ConsumerFactory<String, SagaCommand> consumerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -65,32 +65,12 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, SagaEvent> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, SagaEvent> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
-        factory.setConcurrency(3);  /// Tăng số lượng consumer thread để xử lý song song các partition.
-        return factory;
-    }
-
-    @Bean
-    public ConsumerFactory<String, SagaCommand> consumerCommandFactory() {
-        Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        config.put(JsonDeserializer.TRUSTED_PACKAGES, "com.minh.*");
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        return new DefaultKafkaConsumerFactory<>(config);
-    }
-
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, SagaCommand> kafkaListenerSagaCommandContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, SagaCommand> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, SagaCommand> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerCommandFactory());
+        factory.setConsumerFactory(consumerFactory());
         factory.setCommonErrorHandler(productKafkaErrorHandler);
-        factory.setConcurrency(3);  /// Tăng số lượng consumer thread để xử lý song song các partition.
+        factory.setConcurrency(3);
         return factory;
     }
 }

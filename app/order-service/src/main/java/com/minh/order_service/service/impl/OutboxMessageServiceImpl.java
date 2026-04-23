@@ -4,14 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.minh.common.commands.*;
 import com.minh.common.enums.MessageType;
-import com.minh.common.events.*;
+import com.minh.common.events.OrderCompletionFailedEvent;
+import com.minh.common.events.SagaEvent;
 import com.minh.common.utils.AppUtils;
 import com.minh.order_service.entity.OutboxMessage;
 import com.minh.order_service.repository.OutboxMessageRepository;
 import com.minh.order_service.service.OutboxMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.network.Send;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -131,7 +132,7 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
 
     private void handleSendResult(CompletableFuture<SendResult<String, Object>> future, OutboxMessage message) {
         future.whenComplete((result, ex) -> {
-            if (ex == null) {
+            if (Objects.isNull(ex)) {
                 /// ex == null -> Success.
                 message.setProcessed(Boolean.TRUE);
                 message.setProcessedAt(Instant.now());

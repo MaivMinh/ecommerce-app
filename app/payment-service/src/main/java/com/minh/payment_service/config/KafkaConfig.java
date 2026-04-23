@@ -55,7 +55,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConsumerFactory<String, SagaEvent> consumerFactory() {
+    public ConsumerFactory<String, SagaCommand> consumerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -66,31 +66,10 @@ public class KafkaConfig {
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, SagaEvent> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, SagaEvent> factory =
-                new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
-        factory.setCommonErrorHandler(paymentKafkaErrorHandler);
-        factory.setConcurrency(3);  /// Tăng số lượng consumer thread để xử lý song song các partition.
-        return factory;
-    }
-
-    @Bean
-    public ConsumerFactory<String, SagaCommand> consumerCommandFactory() {
-        Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        config.put(JsonDeserializer.TRUSTED_PACKAGES, "com.minh.*");
-        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-        return new DefaultKafkaConsumerFactory<>(config);
-    }
-
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, SagaCommand> kafkaListenerSagaCommandContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, SagaCommand> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, SagaCommand> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerCommandFactory());
+        factory.setConsumerFactory(consumerFactory());
         factory.setCommonErrorHandler(paymentKafkaErrorHandler);
         factory.setConcurrency(3);  /// Tăng số lượng consumer thread để xử lý song song các partition.
         return factory;
