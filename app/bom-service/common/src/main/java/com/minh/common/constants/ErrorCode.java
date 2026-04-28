@@ -63,9 +63,11 @@ public class ErrorCode {
         public static final String NOT_FOUND = "order.not.found";
         public static final String UPDATE_FAILED = "order.update.failed";
     }
+
     public static class Payment {
         public static final String NOT_FOUND = "payment.not.found";
         public static final String PAYMENT_FAILED = "payment.failed";
+        public static final String PAYMENT_ERROR = "payment.error";
     }
 
     public static class OrderPromotion {
@@ -80,13 +82,16 @@ public class ErrorCode {
         public static final String TEMPLATE_CODE_EXISTED = "notification.template.template.code.existed";
         public static final String NOT_FOUND = "notification.template.not.found";
     }
+
     public static class Campaign {
         public static final String NOT_FOUND = "campaign.not.found";
     }
+
     public static class Game {
         public static final String NOT_FOUND = "game.not.found";
         public static final String INVALID_REQUEST = "game.invalid.request";
     }
+
     public static class Voucher {
         public static final String NOT_FOUND = "voucher.not.found";
     }
@@ -102,6 +107,7 @@ public class ErrorCode {
     public static class Question {
         public static final String NOT_FOUND = "question.not.found";
     }
+
     public static class Event {
         public static final String ALREADY_REGISTERED = "event.already.registered";
     }

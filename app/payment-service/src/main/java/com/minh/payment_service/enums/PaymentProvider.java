@@ -4,7 +4,7 @@ public enum PaymentProvider {
     VIETTEL_MONEY("VIETTEL_MONEY"),
     MOMO("MOMO"),
     VNPAY("VNPAY"),
-    ZALO_PAY("ZALO_PAY");
+    TECHCOMBANK("TECHCOMBANK");
 
     private final String description;
 

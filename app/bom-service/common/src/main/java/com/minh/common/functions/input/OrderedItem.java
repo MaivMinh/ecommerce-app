@@ -16,4 +16,5 @@ public class OrderedItem {
     private String cover;
     private String colorName;
     private String size;
+    private String linkToProduct;
 }

@@ -19,8 +19,6 @@ public class ProductDTO {
     @Size(min = 5, message = "The length of the products name should be at least 5")
     private String name;
     private String slug;
-    @NotBlank(message = "Description is required")
-    @Size(max = 1000, message = "The length of the products description should be less than 1000")
     private String description;
     private String cover;
     private List<String> images;

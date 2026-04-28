@@ -83,13 +83,10 @@ public class AuthorizationInterceptorFilter extends OncePerRequestFilter {
             String username = (String) payload.get("preferred_username");
 
             List<String> roles = new ArrayList<>();
-            if (payload.containsKey("resource_access")) {
-                Map<String, Object> resourceAccess = (Map<String, Object>) payload.get("resource_access");
-                if (resourceAccess.containsKey("e-commerce")) {
-                    Map<String, Object> ecommerce = (Map<String, Object>) resourceAccess.get("e-commerce");
-                    if (ecommerce.containsKey("roles")) {
-                        roles = (List<String>) ecommerce.get("roles");
-                    }
+            if (payload.containsKey("realm_access")) {
+                Map<String, Object> realmAccess = (Map<String, Object>) payload.get("realm_access");
+                if (realmAccess.containsKey("roles")) {
+                    roles = (List<String>) realmAccess.get("roles");
                 }
             }
 

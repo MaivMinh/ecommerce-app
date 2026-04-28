@@ -18,7 +18,7 @@ public class FallbackController {
     public Mono<ResponseEntity<Map<String, Object>>> productServiceContactSupport() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("message", "Product Service không hỗ trợ. Vui lòng gọi team hỗ trowj!");
+        response.put("message", "Product Service không hỗ trợ. Vui lòng gọi team hỗ trợ!");
         response.put("timestamp", new Date());
 
         return Mono.just(ResponseEntity

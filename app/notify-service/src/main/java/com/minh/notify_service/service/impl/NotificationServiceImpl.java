@@ -54,20 +54,17 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void handleNotifyOrderConfirmed(NotifyOrderCompletedEvent event) {
+        if (!StringUtils.hasText(event.getTemplateCode())) {
+            throw new RuntimeException("Template code bị trống trong sự kiện.");
+        }
         NotifyEvent data = prepareDataOrder(event);
         if (Objects.isNull(data)) {
-            log.error("Lỗi khi chuẩn bị dữ liệu cho sự kiện NotifyOrderCompletedEvent: {}", event);
-            return;
-        }
-        if (!StringUtils.hasText(event.getTemplateCode())) {
-            log.error("Template code bị trống trong sự kiện NotifyOrderCompletedEvent: {}", event);
-            return;
+            throw new RuntimeException("Lỗi khi chuẩn bị dữ liệu cho sự kiện." + event);
         }
         String templateCode = event.getTemplateCode();
         NotificationTemplateDto dto = notificationTemplateService.findNotificationTemplateByTemplateCodeAndIsActive(templateCode, true);
         if (Objects.isNull(dto)) {
-            log.error("Không tìm thấy mẫu thông báo với mã templateCode: {}", templateCode);
-            return;
+            throw new RuntimeException("Không tìm thấy mẫu thông báo với mã templateCode: " + templateCode);
         }
         Map<String, String> recipient = event.getRecipient();
 

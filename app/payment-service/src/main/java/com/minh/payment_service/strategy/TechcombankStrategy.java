@@ -3,7 +3,6 @@ package com.minh.payment_service.strategy;
 import com.minh.common.commands.ProcessPaymentCommand;
 import com.minh.common.commands.RefundProcessedPaymentCommand;
 import com.minh.common.constants.ErrorCode;
-import com.minh.common.events.PaymentProcessedEvent;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.utils.AppUtils;
 import com.minh.payment_service.enums.PaymentProvider;
@@ -20,24 +19,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service("ZALO_PAY")
+@Service("TECHCOMBANK")
 @RequiredArgsConstructor
-public class ZaloPayStrategy extends AbstractPaymentStrategy {
+public class TechcombankStrategy extends AbstractPaymentStrategy {
     private final PaymentMethodService paymentMethodService;
     private final MessageCommon messageCommon;
     private final PaymentRepository paymentRepository;
 
     @Override
     public PaymentProvider getProvider() {
-        return PaymentProvider.ZALO_PAY;
+        return PaymentProvider.TECHCOMBANK;
     }
 
     @Override
     protected PaymentResponse makePayment(ProcessPaymentCommand command) {
-        /// Logic triển khai thanh toán qua ZaloPay.
-        log.info("Processing payment via ZaloPay for request: {}", command);
+        log.info("Processing payment via Techcombank for request: {}", command);
 
         String paymentId = AppUtils.generateUUIDv7();
+        command.setPaymentId(paymentId);
         try {
             PaymentMethodDto method = paymentMethodService.findByCode(command.getPaymentMethod());
             if (method == null) {
@@ -57,7 +56,7 @@ public class ZaloPayStrategy extends AbstractPaymentStrategy {
             return PaymentResponse.builder()
                     .paymentId(paymentId)
                     .status(HttpStatus.OK.value())
-                    .message("Payment processed successfully via Zalo Pay.")
+                    .message("Payment processed successfully via Techcombank.")
                     .build();
         } catch (Exception e) {
             throw new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.PAYMENT_FAILED, paymentId));
@@ -66,7 +65,7 @@ public class ZaloPayStrategy extends AbstractPaymentStrategy {
 
     @Override
     protected void makeRefund(RefundProcessedPaymentCommand command) {
-        log.info("Processing refund via ZaloPay for command: {}", command);
+        log.info("Processing refund via Techcombank for command: {}", command);
         try {
             Payment payment = paymentRepository.findById(command.getPaymentId())
                     .orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.NOT_FOUND, command.getPaymentId())));

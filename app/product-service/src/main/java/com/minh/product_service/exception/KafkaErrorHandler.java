@@ -5,6 +5,7 @@ import com.minh.common.commands.ReleaseProductCommand;
 import com.minh.common.commands.ReserveProductCommand;
 import com.minh.common.events.ProductReservationFailedEvent;
 import com.minh.common.kafka.KafkaTopics;
+import com.minh.product_service.outbox.OutboxMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 public class KafkaErrorHandler {
 
     @Bean
-    public DefaultErrorHandler productKafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
+    public DefaultErrorHandler productKafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate, OutboxMessageService outboxMessageService) {
 
         ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
         backOff.setInitialInterval(2000L);
@@ -28,22 +29,17 @@ public class KafkaErrorHandler {
                 (record, exception) -> {
                     Object message = record.value();
                     if (message instanceof ReserveProductCommand command) {
-                        log.info("Processing failed for ReserveProductCommand with sagaId: {}. Exception: {}", command.getSagaId(), exception.getMessage());
+                        log.error("Lỗi khi đặt chỗ sản phẩm cho đơn hàng {}: {}", command.getOrderId(), exception.getMessage());
                         ProductReservationFailedEvent event = ProductReservationFailedEvent.builder()
                                 .orderId(command.getOrderId())
                                 .username(command.getUsername())
                                 .errorMsg(exception.getMessage())
                                 .build();
-                        kafkaTemplate.send(KafkaTopics.PRODUCT_RESERVATION_FAILED, command.getSagaId(), event);
-                        log.info("Failed to process ReserveProductCommand after retries. Sent ProductReservationFailedEvent to Kafka. Message: {}", message);
-                    }   else if (message instanceof ReleaseProductCommand command) {
-                        log.info("Processing failed for ReleaseProductCommand with sagaId: {}. Exception: {}", command.getSagaId(), exception.getMessage());
-                        kafkaTemplate.send(
-                                KafkaTopics.GLOBAL_TECHNICAL_DLT,
-                                command.getSagaId(),
-                                command
-                        );
-                        log.info("Failed to process RefundProcessedPaymentCommand after retries. Sent to DLT. Message: {}", message);
+                        event.setMessageId(command.getMessageId());
+                        outboxMessageService.store(KafkaTopics.PRODUCT_RESERVATION_FAILED, event, event.getClass().getName());
+                    } else if (message instanceof ReleaseProductCommand command) {
+                        log.info("Lỗi khi thực hiện giải phóng sản phẩm đã đặt chỗ cho đơn hàng {}: {}", command.getOrderId(), exception.getMessage());
+                        outboxMessageService.store(KafkaTopics.GLOBAL_TECHNICAL_DLT, command, command.getClass().getName());
                     } else {
                         log.error("Received unknown message type: {}", message.getClass().getName());
                     }

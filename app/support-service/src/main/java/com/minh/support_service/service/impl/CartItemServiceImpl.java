@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import product_service.CartItemField;
 import product_service.FindProductVariantsByIdsRequest;
 import product_service.FindProductVariantsByIdsResponse;
@@ -124,7 +125,7 @@ public class CartItemServiceImpl implements CartItemService {
         try {
 
             Cart cart = cartRepository.findByUsername(username);
-            if (cart == null) {
+            if (Objects.isNull(cart) || !StringUtils.hasText(cart.getId())) {
                 return ResponseData.builder()
                         .status(HttpStatus.NOT_FOUND.value())
                         .message(messageCommon.getMessage(ErrorCode.Cart.NOT_FOUND_WITH_USER_ID, username))

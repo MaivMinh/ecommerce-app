@@ -24,7 +24,6 @@ public class ProductReservationConsumer {
             /// Lưu ý, Kafka Error Handler sẽ dùng để catch lại những lỗi được throw ra trong quá trình consume message hoặc khi các hàm trong service throw ra.
             /// Về cách hoạt động nó khác giống với GlobalExceptionHandler của Spring Boot.
     )
-    @Transactional
     public void handleReserveProductCommand(ReserveProductCommand command) {
         service.reserveProduct(command);
     }
@@ -35,7 +34,6 @@ public class ProductReservationConsumer {
             groupId = "product-service",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    @Transactional
     public void handleReleaseProductCommand(ReleaseProductCommand command) {
         service.releaseReservedProduct(command);
     }

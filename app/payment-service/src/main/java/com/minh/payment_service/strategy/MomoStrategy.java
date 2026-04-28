@@ -35,7 +35,8 @@ public class MomoStrategy extends AbstractPaymentStrategy {
     @Override
     protected PaymentResponse makePayment(ProcessPaymentCommand command) {
         log.info("Processing payment via Momo for request: {}", command);
-
+        String paymentId = AppUtils.generateUUIDv7();
+        command.setPaymentId(paymentId);
         try {
             PaymentMethodDto method = paymentMethodService.findByCode(command.getPaymentMethod());
             if (method == null) {
@@ -43,7 +44,7 @@ public class MomoStrategy extends AbstractPaymentStrategy {
             }
 
             Payment payment = new Payment();
-            payment.setId(command.getPaymentId());
+            payment.setId(paymentId);
             payment.setOrderId(command.getOrderId());
             payment.setTotal(command.getTotal());
             payment.setPaymentMethodId(method.getId());

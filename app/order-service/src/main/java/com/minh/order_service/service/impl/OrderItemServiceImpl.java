@@ -20,19 +20,7 @@ public class OrderItemServiceImpl implements OrderItemService {
     }
 
     @Override
-    @Transactional
-    public void removeAllByOrderId(String orderId) {
-        orderItemRepository.removeAllByOrderId(orderId);
-    }
-
-    @Override
     public List<OrderItem> getAllByOrderId(String id) {
         return orderItemRepository.findAllByOrderId(id);
-    }
-
-    @Override
-    @Transactional
-    public int deleteAllByOrderId(String orderId) {
-        return orderItemRepository.deleteAllByOrderId(orderId);
     }
 }

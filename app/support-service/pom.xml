@@ -9,7 +9,6 @@
         <relativePath>../bom-service/pom.xml</relativePath>
     </parent>
     <artifactId>support-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>support-service</name>
     <description>Services for e-commerce</description>
     <url/>

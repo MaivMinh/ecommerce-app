@@ -26,6 +26,9 @@ spring:
         binder:
           brokers:
             - ${KAFKA_BROKER:localhost:9092}
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
 
 
 

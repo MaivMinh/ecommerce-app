@@ -5,6 +5,7 @@ import com.minh.common.commands.ProcessPaymentCommand;
 import com.minh.common.commands.RefundProcessedPaymentCommand;
 import com.minh.common.events.PaymentFailedEvent;
 import com.minh.common.kafka.KafkaTopics;
+import com.minh.payment_service.outbox.OutboxMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 public class KafkaErrorHandler {
 
     @Bean
-    public DefaultErrorHandler paymentKafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
+    public DefaultErrorHandler paymentKafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate, OutboxMessageService outboxMessageService) {
 
         ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
         backOff.setInitialInterval(2000L);
@@ -28,7 +29,6 @@ public class KafkaErrorHandler {
                 (record, exception) -> {
                     Object message = record.value();
                     if (message instanceof ProcessPaymentCommand command) {
-                        log.info("Processing failed for ProcessPaymentCommand with sagaId: {}. Exception: {}", command.getSagaId(), exception.getMessage());
                         PaymentFailedEvent event = PaymentFailedEvent.builder()
                                 .orderId(command.getOrderId())
                                 .username(command.getUsername())
@@ -36,19 +36,11 @@ public class KafkaErrorHandler {
                                 .build();
                         event.setSagaId(command.getSagaId());
                         event.setTimestamp(command.getTimestamp());
-                        kafkaTemplate.send(KafkaTopics.PAYMENT_FAILED,
-                                command.getSagaId(),
-                                event
-                        );
-                        log.info("Failed to process ProcessPaymentCommand after retries. Sent PaymentFailedEvent to Kafka. Message: {}", message);
+                        event.setMessageId(command.getMessageId());
+                        outboxMessageService.store(KafkaTopics.PAYMENT_FAILED, event, event.getClass().getName());
                     } else if (message instanceof RefundProcessedPaymentCommand command) {
-                        log.info("Processing failed for RefundProcessedPaymentCommand with sagaId: {}. Exception: {}", command.getSagaId(), exception.getMessage());
-                        kafkaTemplate.send(
-                                KafkaTopics.GLOBAL_TECHNICAL_DLT,
-                                command.getSagaId(),
-                                command
-                        );
-                        log.info("Failed to process RefundProcessedPaymentCommand after retries. Sent to DLT. Message: {}", message);
+                        command.setMessageId(command.getMessageId());
+                        outboxMessageService.store(KafkaTopics.GLOBAL_TECHNICAL_DLT, command, command.getClass().getName());
                     } else {
                         log.error("Received unknown message type: {}", message.getClass().getName());
                     }

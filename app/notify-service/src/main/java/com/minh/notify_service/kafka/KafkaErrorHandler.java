@@ -1,8 +1,5 @@
 package com.minh.notify_service.kafka;
 
-import com.minh.common.commands.ProcessPaymentCommand;
-import com.minh.common.commands.RefundProcessedPaymentCommand;
-import com.minh.common.events.PaymentFailedEvent;
 import com.minh.common.functions.input.NotifyOrderCancelledEvent;
 import com.minh.common.functions.input.NotifyOrderCompletedEvent;
 import com.minh.common.kafka.KafkaTopics;

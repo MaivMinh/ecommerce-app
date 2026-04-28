@@ -34,10 +34,10 @@ public class ViettelMoneyStrategy extends AbstractPaymentStrategy {
 
     @Override
     protected PaymentResponse makePayment(ProcessPaymentCommand command) {
-        /// Logic triển khai thanh toán qua Viettel Money.
         log.info("Processing payment via Viettel Money for request: {}", command);
 
         String paymentId = AppUtils.generateUUIDv7();
+        command.setPaymentId(paymentId);
         try {
             PaymentMethodDto method = paymentMethodService.findByCode(command.getPaymentMethod());
             if (method == null) {

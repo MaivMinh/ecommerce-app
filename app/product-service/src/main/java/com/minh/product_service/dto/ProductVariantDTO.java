@@ -24,4 +24,8 @@ public class ProductVariantDTO {
     private Double originalPrice;
     @NotNull
     private Integer quantity;
+
+    private String cover;
+    private String slug;
+    private String name;
 }

@@ -19,3 +19,11 @@ b. Sự khác biệt của access_token & id_token trong Keycloak.
 - id_token: được sử dụng với mục đích nhận diện người dùng. Nó chứa thông tin về người dùng như tên, email, và các thuộc tính khác. ID token thường được sử dụng trong quá trình đăng nhập để xác định danh tính của người dùng và cung cấp thông tin về người dùng cho ứng dụng. ID Token thường được sử dụng chủ yếu ở phía Client, Client web thường dùng thông tin này để tạo mới một hồ sơ/ record cho hệ thống hoặc để hiển thị thông tin người dùng trên giao diện.
 - Nói cách khác: id token chỉ đơn thuần là để nhận diện người dùng, nó không có quyền hạn gì cả, và nó cũng không được sử dụng để truy cập vào tài nguyên nào cả. Nó chỉ đơn thuần là một token chứa thông tin về người dùng, và được sử dụng để xác định danh tính của người dùng.
 - Trong một số trường hợp, nếu hệ thống có yêu cầu về việc xác thực và ủy quyền truy cập vào các tài nguyên bảo vệ, thì chúng ta sẽ sử dụng access_token để xác thực và ủy quyền truy cập vào các tài nguyên bảo vệ. Còn nếu hệ thống chỉ cần xác định danh tính của người dùng, thì chúng ta sẽ sử dụng id_token để xác định danh tính của người dùng. 
+
+
+3. **Performance Tuning**
+- Cải thiện hiệu suất cho Publish Message Worker ở các service thông qua: 
+  - Sử dụng batch processing và phân trang (lock db) để gửi nhiều message cùng một lúc thay vì gửi từng message một và hạn chế việc fetch toàn bộ un-processed message từ database vì có thể gây ra tình trạng memory overflow nếu có quá nhiều message chưa được xử lý và hơn nữa khi hệ thống scale nhiều lên thì nên chia nhỏ ra cho các worker khác nhau để xử lý các batch message khác nhau, tránh tình trạng một worker phải xử lý quá nhiều message cùng một lúc.
+  - Tạo ra thread pool để xử lý các batch message. Vì publish message thường có xu hướng là I/O bound task, nên tạo ra nhiều thread sẽ tối ưu CPU hơn.
+  - Tăng partition của Kafka.
+  - Giảm fixed delay giữa các lần publish message xuống, ví dụ từ 1s xuống 500ms, để tăng tốc độ publish message hơn. Nhưng cũng hạn chế giảm quá sâu, vì điều ny khiến cho hệ thống phải liên tục fetch un-processed message từ database làm tăng tải cho Database.

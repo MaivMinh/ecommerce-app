@@ -88,7 +88,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
             return new ArrayList<>();
         }
 
-        List<ProductVariant> productVariants = productVariantRepository.findProductVariantsByIds(productVariantIds);
+        List<ProductVariantDTO> productVariants = productVariantRepository.findProductVariantsByIds(productVariantIds);
         return productVariants.stream()
                 .map(variant -> modelMapper.map(variant, ProductVariantDTO.class))
                 .collect(Collectors.toList());

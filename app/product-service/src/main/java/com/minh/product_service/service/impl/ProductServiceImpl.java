@@ -376,7 +376,7 @@ public class ProductServiceImpl implements ProductService {
     /**
      * Tìm nhiều biến thể sản phẩm theo danh sách ID.
      *
-     * @param request
+     * @param request: Danh sách cart-item và product-variant tương ứng.
      * @return FindProductVariantsByIdsResponse
      */
     @Override
@@ -403,7 +403,6 @@ public class ProductServiceImpl implements ProductService {
                     .setMessage("Không tìm thấy biến thể sản phẩm nào.")
                     .build();
         }
-        Product product = productRepository.findById(productVariantDTOS.get(0).getProductId()).orElse(null);
         if (!CollectionUtils.isEmpty(productVariantDTOS)) {
             productVariantDTOS.forEach(productVariant -> {
                 CartItemField cartItemField = (CartItemField) map.get(productVariant.getId());
@@ -415,10 +414,10 @@ public class ProductServiceImpl implements ProductService {
                 builder.setPrice(productVariant.getPrice());
                 builder.setColorName(productVariant.getColorName());
                 builder.setColorHex(productVariant.getColorHex());
-                builder.setCover(product.getCover());
-                builder.setSlug(product.getSlug());
-                builder.setName(product.getName());
-                builder.setProductId(product.getId());
+                builder.setCover(productVariant.getCover());
+                builder.setSlug(productVariant.getSlug());
+                builder.setName(productVariant.getName());
+                builder.setProductId(productVariant.getId());
                 ProductVariant variant = builder.build();
                 productVariants.add(variant);
             });

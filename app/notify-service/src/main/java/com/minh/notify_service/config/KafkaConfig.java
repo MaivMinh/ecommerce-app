@@ -68,7 +68,7 @@ public class KafkaConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.setCommonErrorHandler(notifyServiceErrorHandler);
-        factory.setConcurrency(3);  /// Tăng số lượng consumer thread để xử lý song song các partition.
+        factory.setConcurrency(3);
         return factory;
     }
 }

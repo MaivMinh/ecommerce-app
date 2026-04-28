@@ -10,6 +10,7 @@
         <option value="$PROJECT_DIR$/app/Bản sao support-service/pom.xml" />
         <option value="$PROJECT_DIR$/app/event-service/pom.xml" />
         <option value="$PROJECT_DIR$/app/realtime-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/app/notify-service/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">

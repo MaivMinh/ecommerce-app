@@ -9,7 +9,6 @@
         <relativePath>../bom-service/pom.xml</relativePath>
     </parent>
     <artifactId>payment-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>payment-service</name>
     <description>Payment service</description>
     <url/>

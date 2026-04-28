@@ -3,6 +3,7 @@ package com.minh.order_service.repository;
 import com.minh.order_service.entity.OutboxMessage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,7 +12,14 @@ import java.util.List;
 public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, String> {
 
     @Query(value = """
-            select om from OutboxMessage om where om.processed = false   
-            """)
-    List<OutboxMessage> findAllByProcessed();
+            SELECT *\s
+            FROM outbox_messages om\s
+            WHERE om.processed = FALSE\s
+            ORDER BY created_at\s
+            LIMIT :N
+            FOR UPDATE SKIP LOCKED
+           \s""", nativeQuery = true)
+    List<OutboxMessage> findTopNUnprocessedMessage(@Param(value = "N") int N);
+
+    boolean existsByMessageId(String messageId);
 }

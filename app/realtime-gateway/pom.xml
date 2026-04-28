@@ -9,7 +9,6 @@
         <relativePath>../bom-service/pom.xml</relativePath>
     </parent>
 	<artifactId>realtime-gateway</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<name>realtime-gateway</name>
 	<description>Realtime gateway for E-commerce</description>
 	<url/>

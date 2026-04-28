@@ -17,11 +17,4 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, String> {
 
     @Query(value = "select * from order_items where order_id = :id", nativeQuery = true)
     List<OrderItem> findAllByOrderId(@Param("id") String id);
-
-    @Modifying
-    @Query(value = """
-            DELETE from order_items
-            WHERE order_id = :orderId
-            """, nativeQuery = true)
-    int deleteAllByOrderId(@Param(value = "orderId") String orderId);
 }

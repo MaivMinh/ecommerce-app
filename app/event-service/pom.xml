@@ -9,7 +9,6 @@
         <relativePath>../bom-service/pom.xml</relativePath>
     </parent>
 	<artifactId>event-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
 	<name>event-service</name>
 	<description>Event service for E-commerce</description>
 	<url/>

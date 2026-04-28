@@ -34,10 +34,9 @@ public class VNPayStrategy extends AbstractPaymentStrategy {
 
     @Override
     protected PaymentResponse makePayment(ProcessPaymentCommand command) {
-        /// Logic triển khai thanh toán qua VNPay.
         log.info("Processing payment via VNPay for request: {}", command);
-
         String paymentId = AppUtils.generateUUIDv7();
+        command.setPaymentId(paymentId);
         try {
             PaymentMethodDto method = paymentMethodService.findByCode(command.getPaymentMethod());
             if (method == null) {

@@ -42,6 +42,8 @@ public class KafkaConfig {
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        config.put(ProducerConfig.BATCH_SIZE_CONFIG, 65536);
+        config.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "lz4");
 
         // Đảm bảo message được gửi đúng thứ tự trong cùng partition
         config.put(ProducerConfig.ACKS_CONFIG, "all");

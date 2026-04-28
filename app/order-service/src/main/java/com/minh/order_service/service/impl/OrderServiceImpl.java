@@ -22,7 +22,10 @@ import com.minh.order_service.enums.*;
 import com.minh.order_service.grpc.client.PaymentGrpcClient;
 import com.minh.order_service.grpc.client.ProductGrpcClient;
 import com.minh.order_service.grpc.client.SupportGrpcClient;
-import com.minh.order_service.payload.request.*;
+import com.minh.order_service.payload.request.CreateOrderRequest;
+import com.minh.order_service.payload.request.GetOrderDetailQuery;
+import com.minh.order_service.payload.request.SearchOrdersForUserQuery;
+import com.minh.order_service.payload.request.SearchOrdersRequest;
 import com.minh.order_service.payload.response.OrderDetailRes;
 import com.minh.order_service.payload.response.OrderItemRes;
 import com.minh.order_service.payload.response.ShippingAddressRes;
@@ -41,6 +44,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -53,6 +57,7 @@ import product_service.ProductVariantRes;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -80,10 +85,7 @@ public class OrderServiceImpl implements OrderService {
     private void rollbackUsedPromotion(String orderId) {
         List<OrderPromotion> orderPromotions = orderPromotionRepository.findAllByOrderId(orderId);
 
-        OrderPromotion orderPromotion = orderPromotions.stream()
-                .filter(OrderPromotion::getIsUsed)
-                .findFirst()
-                .orElse(null);
+        OrderPromotion orderPromotion = orderPromotions.stream().filter(OrderPromotion::getIsUsed).findFirst().orElse(null);
 
         if (Objects.isNull(orderPromotion)) {
             log.info("No promotion applied for this order: {}", orderId);
@@ -102,21 +104,10 @@ public class OrderServiceImpl implements OrderService {
         orderPromotionRepository.updateIsUsedByIds(Boolean.FALSE, List.of(orderPromotion.getId()));
     }
 
-    public ResponseData findOverallStatusOfCreatingOrder(FindOverallStatusOfCreatingOrderQuery query) {
-        Order order = orderRepository.findById(query.getOrderId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng: " + query.getOrderId()));
-        return ResponseData.builder()
-                .status(200)
-                .message("Lấy thông tin đơn hàng thành công")
-                .data(Collections.singletonMap("orderStatus", order.getStatus()))
-                .build();
-    }
-
     @Override
     public OrderDetailRes getOrderDetail(GetOrderDetailQuery query) {
         try {
-            Order order = orderRepository.findById(query.getOrderId())
-                    .orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.NOT_FOUND, query.getOrderId())));
+            Order order = orderRepository.findById(query.getOrderId()).orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.NOT_FOUND, query.getOrderId())));
 
             OrderDetailRes response = new OrderDetailRes();
             response.setId(order.getId());
@@ -131,9 +122,7 @@ public class OrderServiceImpl implements OrderService {
             response.setCreatedBy(order.getCreatedBy());
 
             //Get Shipping Address.
-            GetShippingAddressRequest request = GetShippingAddressRequest.newBuilder()
-                    .setShippingAddressId(order.getShippingAddressId())
-                    .build();
+            GetShippingAddressRequest request = GetShippingAddressRequest.newBuilder().setShippingAddressId(order.getShippingAddressId()).build();
 
             GetShippingAddressResponse shippingAddressGrpcRes = supportGrpcClient.getShippingAddress(request);
 
@@ -154,54 +143,48 @@ public class OrderServiceImpl implements OrderService {
             /// Get product variant for each item.
             List<OrderItem> items = orderItemService.getAllByOrderId(order.getId());
             /// Mapping id -> OrderItem.
-            Map<String, OrderItem> itemMap = items.stream()
-                    .collect(java.util.stream.Collectors.toMap(OrderItem::getId, item -> item));
+            Map<String, OrderItem> itemMap = items.stream().collect(java.util.stream.Collectors.toMap(OrderItem::getId, item -> item));
 
+            List<OrderItemAndProductVariantId> ids = items.stream().map(item -> OrderItemAndProductVariantId.newBuilder().setOrderItemId(item.getId()).setProductVariantId(item.getProductVariantId()).build()).toList();
+            if (!ids.isEmpty()) {
+                FindProductVariantByListProductVariantIdRequest req = FindProductVariantByListProductVariantIdRequest.newBuilder().addAllIds(ids).build();
+                FindProductVariantByListProductVariantIdResponse res = productGrpcClient.findProductVariantByListId(req);
+                if (res.getStatus() != HttpStatus.OK.value()) {
+                    throw new RuntimeException(messageCommon.getMessage(ErrorCode.INTERNAL_SERVER_ERROR));
+                }
 
-            List<OrderItemAndProductVariantId> ids = items.stream().map(item -> OrderItemAndProductVariantId.newBuilder()
-                    .setOrderItemId(item.getId())
-                    .setProductVariantId(item.getProductVariantId())
-                    .build()).toList();
-            FindProductVariantByListProductVariantIdRequest req = FindProductVariantByListProductVariantIdRequest.newBuilder()
-                    .addAllIds(ids)
-                    .build();
-
-            FindProductVariantByListProductVariantIdResponse res = productGrpcClient.findProductVariantByListId(req);
-            if (res.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
-                throw new RuntimeException(messageCommon.getMessage(ErrorCode.INTERNAL_SERVER_ERROR));
+                List<product_service.ProductVariantRes> productVariantRes = res.getProductVariantsList();
+                List<OrderItemRes> orderItemResList = new ArrayList<>();
+                for (ProductVariantRes productVariant : productVariantRes) {
+                    OrderItem orderItem = itemMap.get(productVariant.getOrderItemId());
+                    OrderItemRes itemRes = new OrderItemRes();
+                    itemRes.setId(orderItem.getId());
+                    itemRes.setPrice(orderItem.getPrice());
+                    itemRes.setQuantity(orderItem.getQuantity());
+                    itemRes.setTotal(orderItem.getTotal());
+                    itemRes.setProductVariant(com.minh.order_service.payload.response.ProductVariantRes.builder()
+                            .id(productVariant.getId())
+                            .colorHex(productVariant.getColorHex())
+                            .colorName(productVariant.getColorName())
+                            .cover(productVariant.getCover())
+                            .name(productVariant.getName())
+                            .originalPrice(productVariant.getOriginalPrice())
+                            .price(productVariant.getPrice())
+                            .size(productVariant.getSize())
+                            .slug(productVariant.getSlug())
+                            .build());
+                    orderItemResList.add(itemRes);
+                }
+                response.setItems(orderItemResList);
+            } else {
+                response.setItems(new ArrayList<>());
             }
-
-            List<product_service.ProductVariantRes> productVariantRes = res.getProductVariantsList();
-            List<OrderItemRes> orderItemResList = new ArrayList<>();
-            for (ProductVariantRes productVariant : productVariantRes) {
-                OrderItem orderItem = itemMap.get(productVariant.getOrderItemId());
-                OrderItemRes itemRes = new OrderItemRes();
-                itemRes.setId(orderItem.getId());
-                itemRes.setPrice(orderItem.getPrice());
-                itemRes.setQuantity(orderItem.getQuantity());
-                itemRes.setTotal(orderItem.getTotal());
-                itemRes.setProductVariant(com.minh.order_service.payload.response.ProductVariantRes.builder()
-                        .id(productVariant.getId())
-                        .colorHex(productVariant.getColorHex())
-                        .colorName(productVariant.getColorName())
-                        .cover(productVariant.getCover())
-                        .name(productVariant.getName())
-                        .originalPrice(productVariant.getOriginalPrice())
-                        .price(productVariant.getPrice())
-                        .size(productVariant.getSize())
-                        .slug(productVariant.getSlug())
-                        .build());
-                orderItemResList.add(itemRes);
-            }
-            response.setItems(orderItemResList);
 
             /// Get Payment status of order.
-            GetPaymentStatusRequest paymentStatusRequest = GetPaymentStatusRequest.newBuilder()
-                    .setOrderId(order.getId())
-                    .build();
+            GetPaymentStatusRequest paymentStatusRequest = GetPaymentStatusRequest.newBuilder().setOrderId(order.getId()).build();
             GetPaymentStatusResponse paymentStatusResponse = paymentGrpcClient.getPaymentStatus(paymentStatusRequest);
             if (paymentStatusResponse.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
-                throw new RuntimeException(messageCommon.getMessage(paymentStatusResponse.getMessage()));
+                throw new RuntimeException(messageCommon.getMessage(ErrorCode.Payment.PAYMENT_ERROR));
             }
 
             if (StringUtils.hasText(paymentStatusResponse.getPaymentStatus())) {
@@ -220,9 +203,7 @@ public class OrderServiceImpl implements OrderService {
 
         List<OrderDetailRes> response = new ArrayList<>();
         for (String orderId : orderIds.getContent()) {
-            GetOrderDetailQuery query = GetOrderDetailQuery.builder()
-                    .orderId(orderId)
-                    .build();
+            GetOrderDetailQuery query = GetOrderDetailQuery.builder().orderId(orderId).build();
             OrderDetailRes orderDetail = getOrderDetail(query);
             response.add(orderDetail);
         }
@@ -234,11 +215,7 @@ public class OrderServiceImpl implements OrderService {
         data.put("size", orderIds.getSize());
         data.put("page", orderIds.getNumber() + 1);
 
-        return ResponseData.builder()
-                .status(200)
-                .message(ResponseMessages.SUCCESS)
-                .data(data)
-                .build();
+        return ResponseData.builder().status(200).message(ResponseMessages.SUCCESS).data(data).build();
     }
 
     @Override
@@ -250,9 +227,7 @@ public class OrderServiceImpl implements OrderService {
 
         List<OrderDetailRes> response = new ArrayList<>();
         for (String orderId : orderIds.getContent()) {
-            GetOrderDetailQuery param = GetOrderDetailQuery.builder()
-                    .orderId(orderId)
-                    .build();
+            GetOrderDetailQuery param = GetOrderDetailQuery.builder().orderId(orderId).build();
             OrderDetailRes orderDetail = getOrderDetail(param);
             response.add(orderDetail);
         }
@@ -264,11 +239,7 @@ public class OrderServiceImpl implements OrderService {
         data.put("size", orderIds.getSize());
         data.put("page", orderIds.getNumber() + 1);
 
-        return ResponseData.builder()
-                .status(200)
-                .message(ResponseMessages.SUCCESS)
-                .data(data)
-                .build();
+        return ResponseData.builder().status(200).message(ResponseMessages.SUCCESS).data(data).build();
     }
 
 
@@ -325,28 +296,11 @@ public class OrderServiceImpl implements OrderService {
             /// Code will be implemented here.
         }
 
-        OrderCreatedEvent event = OrderCreatedEvent.builder()
-                .orderId(orderId)
-                .currency(request.getCurrency())
-                .orderItemDtos(request.getOrderItemDtos().stream().map(item -> OrderItemCreatedEvent.builder()
-                                .id(item.getId())
-                                .productVariantId(item.getProductVariantId())
-                                .quantity(item.getQuantity())
-                                .build())
-                        .toList())
-                .paymentMethod(request.getPaymentMethod())
-                .productId(request.getProductId())
-                .total(request.getTotal())
-                .username(AppUtils.getUsername())
-                .build();
-
+        OrderCreatedEvent event = OrderCreatedEvent.builder().orderId(orderId).currency(request.getCurrency()).orderItemDtos(request.getOrderItemDtos().stream().map(item -> OrderItemCreatedEvent.builder().id(item.getId()).productVariantId(item.getProductVariantId()).quantity(item.getQuantity()).build()).toList()).paymentMethod(request.getPaymentMethod()).productId(request.getProductId()).total(request.getTotal()).username(AppUtils.getUsername()).build();
+        event.setMessageId(AppUtils.generateUUIDv7());
         orchestrator.startSaga(event);
 
-        return ResponseData.builder()
-                .status(HttpStatus.OK.value())
-                .message(ResponseMessages.SUCCESS)
-                .data(null)
-                .build();
+        return ResponseData.builder().status(HttpStatus.OK.value()).message(ResponseMessages.SUCCESS).data(null).build();
     }
 
     @Override
@@ -364,16 +318,9 @@ public class OrderServiceImpl implements OrderService {
             orderSagaStateService.save(state);
 
             /// Update created order.
-            Order order = orderRepository.findById(state.getOrderId())
-                    .orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.UPDATE_FAILED, state.getOrderId())));
+            Order order = orderRepository.findById(state.getOrderId()).orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.UPDATE_FAILED, state.getOrderId())));
             order.setStatus(OrderStatus.CANCELLED);
             orderRepository.save(order);
-
-            /// Delete created order items.
-            int removedItems = orderItemService.deleteAllByOrderId(state.getOrderId());
-            if (removedItems == 0) {
-                log.warn("No order items found to delete for order id: {}", state.getOrderId());
-            }
 
             /// Update promotion if applied.
             this.rollbackUsedPromotion(state.getOrderId());
@@ -382,22 +329,21 @@ public class OrderServiceImpl implements OrderService {
             List<OrderItem> orderItems = orderItemService.getAllByOrderId(state.getOrderId());
             NotifyOrderCancelledEvent event = NotifyOrderCancelledEvent.builder()
                     .orderId(state.getOrderId())
-                    .items(orderItems.stream().map(
-                            item -> OrderedItem.builder()
-                                    .id(item.getId())
-                                    .productVariantId(item.getProductVariantId())
-                                    .quantity(item.getQuantity())
-                                    .price(item.getPrice())
-                                    .build()
-                    ).toList())
+                    .items(orderItems.stream().map(item -> OrderedItem.builder()
+                            .id(item.getId())
+                            .productVariantId(item.getProductVariantId())
+                            .quantity(item.getQuantity())
+                            .price(item.getPrice())
+                            .build())
+                            .toList())
                     .build();
             event.setTemplateCode(NotifyTemplateCode.ORDER_FAILED.name());
-            event.setRecipient(Map.of("username", state.getUsername()));
             event.setMetaData(new HashMap<>());
             event.getMetaData().put("createdAt", order.getCreatedAt());
-            event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/");
+            event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/" + order.getId());
             event.setRecipient(Map.of("username", state.getUsername()));
-            kafkaTemplate.send(KafkaTopics.NOTIFY_ORDER_FAILED, state.getSagaId(), event);
+            CompletableFuture<SendResult<String, Object>> sendResult = kafkaTemplate.send(KafkaTopics.NOTIFY_ORDER_FAILED, state.getSagaId(), event);
+            this.handleSendResult(sendResult, "Thông báo đơn hàng bị hủy đã được gửi tới Kafka cho orderId: " + state.getOrderId(), "Có lỗi xảy ra khi gửi thông báo đơn hàng bị hủy tới Kafka cho orderId: " + state.getOrderId());
         } catch (RuntimeException e) {
             log.error("Error while rejecting order for saga {}: {}", state.getSagaId(), e.getMessage());
         }
@@ -420,8 +366,7 @@ public class OrderServiceImpl implements OrderService {
         state.setStatus(SagaStatus.COMPLETED);
         state.setCurrentStep(SagaStep.ORDER_COMPLETED);
         orderSagaStateService.save(state);
-        Order order = orderRepository.findById(state.getOrderId())
-                .orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.NOT_FOUND, state.getOrderId())));
+        Order order = orderRepository.findById(state.getOrderId()).orElseThrow(() -> new RuntimeException(messageCommon.getMessage(ErrorCode.Order.NOT_FOUND, state.getOrderId())));
         order.setStatus(OrderStatus.SUCCESS);
         orderRepository.save(order);
 
@@ -442,8 +387,20 @@ public class OrderServiceImpl implements OrderService {
         event.setTemplateCode(NotifyTemplateCode.ORDER_CONFIRMATION.name());
         event.setMetaData(new HashMap<>());
         event.getMetaData().put("createdAt", order.getCreatedAt());
-        event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/");
+        event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/" + order.getId());
         event.setRecipient(Map.of("username", state.getUsername()));
-        kafkaTemplate.send(KafkaTopics.ORDER_COMPLETED, state.getSagaId(), event);
+        CompletableFuture<SendResult<String, Object>> sendResult = kafkaTemplate.send(KafkaTopics.ORDER_COMPLETED, state.getSagaId(), event);
+        this.handleSendResult(sendResult, "Thông báo hoàn tất đơn hàng đã được gửi tới Kafka cho orderId: " + state.getOrderId(), "Có lỗi xảy ra khi gửi thông báo hoàn tất đơn hàng tới Kafka cho orderId: " + state.getOrderId());
     }
+
+    private void handleSendResult(CompletableFuture<SendResult<String, Object>> sendResult, String message, String errorMessage) {
+        sendResult.whenComplete((result, ex) -> {
+            if (Objects.isNull(ex)) {
+                log.info(message);
+            } else {
+                log.error(errorMessage);
+            }
+        });
+    }
+
 }
