@@ -22,7 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -64,15 +67,12 @@ public class PromotionServiceImpl implements PromotionService {
         int page = Math.max(0, query.getPage());
         int size = Math.max(1, query.getSize());
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Promotion> promotions = promotionRepository.findAll(pageable);
-
-        Map<String, Object> payload = this.toPayload(promotions);
+        List<Promotion> promotions = promotionRepository.findAllActivePromotions();
 
         return ResponseData.builder()
                 .status(200)
                 .message(ResponseMessages.SUCCESS)
-                .data(payload)
+                .data(promotions)
                 .build();
     }
 

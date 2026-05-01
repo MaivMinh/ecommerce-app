@@ -55,6 +55,7 @@ public class QuestionServiceImpl implements QuestionService {
                     modelMapper.map(req, question);
                     question.setId(AppUtils.generateUUIDv7());
                     question.setCollectionId(saved.getId());
+                    question.setScore(10);
                     return question;
                 }).toList();
         questionRepository.saveAll(questions);

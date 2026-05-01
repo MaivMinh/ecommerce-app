@@ -27,7 +27,6 @@ public class TimelineWorker {
 
         Set<Object> events = redisTemplate.opsForZSet()
                 .rangeByScore(TIMELINE_KEY, 0, now, 0, BATCH_SIZE);
-        log.info("Found {} timeline events to process", events == null ? 0 : events.size());
 
         if (events == null || events.isEmpty()) return;
 

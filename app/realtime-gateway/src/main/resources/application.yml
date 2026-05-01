@@ -27,8 +27,8 @@ spring:
 keycloak:
   realm: e-commerce
   credentials:
-    client-id: e-commerce-backend
-    client-secret: mGVahWP3RYwayv5jQ9LNubRfwM0oiKfH
+    client-id: ecommerce-backend
+    client-secret: yvGToysxGaFG47iCxNPHzmME5MBhegeO
 
 management:
   endpoint:

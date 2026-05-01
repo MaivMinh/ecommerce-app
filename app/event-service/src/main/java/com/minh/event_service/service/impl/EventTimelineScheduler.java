@@ -49,25 +49,25 @@ public class EventTimelineScheduler {
             answers.add(Answer.builder()
                             .answerId(1L)
                             .answerText(question.getOptionA())
-                            .correct(question.getCorrectOption().equals(question.getOptionA()) ? Boolean.TRUE: Boolean.FALSE)
+                            .correct(question.getCorrectOption().equals(question.getOptionA()) || question.getCorrectOption().equals("A") ? Boolean.TRUE: Boolean.FALSE)
                     .build());
 
             answers.add(Answer.builder()
                     .answerId(2L)
                     .answerText(question.getOptionB())
-                    .correct(question.getCorrectOption().equals(question.getOptionB()) ? Boolean.TRUE: Boolean.FALSE)
+                    .correct(question.getCorrectOption().equals(question.getOptionB()) || question.getCorrectOption().equals("B") ? Boolean.TRUE: Boolean.FALSE)
                     .build());
 
             answers.add(Answer.builder()
                     .answerId(3L)
                     .answerText(question.getOptionC())
-                    .correct(question.getCorrectOption().equals(question.getOptionC()) ? Boolean.TRUE: Boolean.FALSE)
+                    .correct(question.getCorrectOption().equals(question.getOptionC()) || question.getCorrectOption().equals("C") ? Boolean.TRUE: Boolean.FALSE)
                     .build());
 
             answers.add(Answer.builder()
                     .answerId(4L)
                     .answerText(question.getOptionD())
-                    .correct(question.getCorrectOption().equals(question.getOptionD()) ? Boolean.TRUE: Boolean.FALSE)
+                    .correct(question.getCorrectOption().equals(question.getOptionD()) || question.getCorrectOption().equals("D") ? Boolean.TRUE: Boolean.FALSE)
                     .build());
 
 
