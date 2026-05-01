@@ -1,5 +1,6 @@
 package com.minh.order_service.config;
 
+import event_service.EventServiceGrpc;
 import game_service.SupportServiceGrpc;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
@@ -33,6 +34,11 @@ public class GrpcClientConfig {
     }
 
     @Bean
+    public TimeLimiter eventServiceTimeLimiter() {
+        return timeLimiterRegistry.timeLimiter("event-service");
+    }
+
+    @Bean
     public ProductServiceGrpc.ProductServiceBlockingStub productServiceBlockingStub() {
         String address = env.getProperty("PRODUCT_GRPC_SERVER", "localhost:9091");  /// Nếu sử dụng các version grpc cũ hơn thì loại bỏ static phía trước.
         return ProductServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget(address).usePlaintext().keepAliveWithoutCalls(true).build());
@@ -48,5 +54,11 @@ public class GrpcClientConfig {
     public PaymentServiceGrpc.PaymentServiceBlockingStub paymentServiceBlockingStub() {
         String address = env.getProperty("PAYMENT_GRPC_SERVER", "localhost:9095");
         return PaymentServiceGrpc.newBlockingStub(io.grpc.ManagedChannelBuilder.forTarget(address).keepAliveWithoutCalls(true).usePlaintext().build());
+    }
+
+    @Bean
+    public EventServiceGrpc.EventServiceBlockingStub eventServiceBlockingStub() {
+        String address = env.getProperty("EVENT_GRPC_SERVER", "localhost:9097");
+        return EventServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget(address).keepAliveWithoutCalls(true).usePlaintext().build());
     }
 }

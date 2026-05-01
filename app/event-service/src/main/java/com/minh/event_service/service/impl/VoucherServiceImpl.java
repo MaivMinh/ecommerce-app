@@ -5,6 +5,7 @@ import com.minh.common.constants.ResponseMessages;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
 import com.minh.common.utils.AppUtils;
+import com.minh.event_service.entity.PlayerVoucher;
 import com.minh.event_service.payload.response.VoucherRedeemedResponse;
 import com.minh.event_service.entity.Voucher;
 import com.minh.event_service.payload.request.CreateVoucherRequest;
@@ -12,9 +13,12 @@ import com.minh.event_service.payload.request.SearchVouchersRequest;
 import com.minh.event_service.payload.request.UpdateVoucherRequest;
 import com.minh.event_service.payload.request.VoucherRequest;
 import com.minh.event_service.payload.response.VoucherResponse;
+import com.minh.event_service.repository.PlayerVoucherRepository;
 import com.minh.event_service.repository.VoucherRepository;
 import com.minh.event_service.service.VoucherService;
+import event_service.UpdateVoucherResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VoucherServiceImpl implements VoucherService {
@@ -33,6 +38,7 @@ public class VoucherServiceImpl implements VoucherService {
     private final ModelMapper modelMapper;
     private final VoucherRepository voucherRepository;
     private final MessageCommon messageCommon;
+    private final PlayerVoucherRepository playerVoucherRepository;
 
     @Override
     public void createVoucher(CreateVoucherRequest request) {
@@ -59,7 +65,7 @@ public class VoucherServiceImpl implements VoucherService {
     @Override
     public ResponseData getVoucherDetailById(String id) {
         Voucher voucher = voucherRepository.findById(id).orElseThrow(
-                () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Voucher.NOT_FOUND,id))
+                () -> new RuntimeException(messageCommon.getMessage(ErrorCode.Voucher.NOT_FOUND, id))
         );
 
         VoucherResponse voucherResponse = modelMapper.map(voucher, VoucherResponse.class);
@@ -158,14 +164,14 @@ public class VoucherServiceImpl implements VoucherService {
 
         List<Voucher> redeemedVouchers = voucherRepository.getVouchersByUsername(username);
         List<VoucherRedeemedResponse> voucherResponse = new ArrayList<>();
-        for (Voucher voucher: redeemedVouchers) {
+        for (Voucher voucher : redeemedVouchers) {
             VoucherRedeemedResponse res = new VoucherRedeemedResponse();
             res.setId(voucher.getId());
             res.setCode(voucher.getCode());
             if (Objects.isNull(voucher.getDiscountPercentage())) {
                 res.setType("fixed");
                 res.setDiscountValue(voucher.getValue());
-            }   else {
+            } else {
                 res.setType("percentage");
                 res.setDiscountValue(voucher.getDiscountPercentage());
             }
@@ -179,6 +185,34 @@ public class VoucherServiceImpl implements VoucherService {
                 .status(200)
                 .message(ResponseMessages.SUCCESS)
                 .data(voucherResponse)
+                .build();
+    }
+
+    @Override
+    public UpdateVoucherResponse updateVoucherGrpc(event_service.UpdateVoucherRequest request) {
+        String voucherId = request.getVoucherId();
+        String username = request.getUsername();
+        if (!StringUtils.hasText(voucherId) || !StringUtils.hasText(username)) {
+            return UpdateVoucherResponse.newBuilder()
+                    .setStatus(500)
+                    .setMessages("Tham số truyền vào không hợp lệ!")
+                    .build();
+        }
+
+        PlayerVoucher saved = playerVoucherRepository.findByVoucherIdAndUsername(voucherId, username);
+        if (Objects.isNull(saved)) {
+            return UpdateVoucherResponse.newBuilder()
+                    .setStatus(404)
+                    .setMessages("Không tìm thấy voucher tương ứng với tham số truyền vào!")
+                    .build();
+        }
+
+        saved.setUsed(Boolean.TRUE);
+        playerVoucherRepository.save(saved);
+        log.info("Update voucher thành công");
+        return UpdateVoucherResponse.newBuilder()
+                .setStatus(200)
+                .setMessages("Cập nhật Voucher sang đã sử dụng thành công!")
                 .build();
     }
 }

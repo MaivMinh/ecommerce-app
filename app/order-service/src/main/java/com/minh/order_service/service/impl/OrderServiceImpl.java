@@ -19,6 +19,7 @@ import com.minh.order_service.entity.OrderItem;
 import com.minh.order_service.entity.OrderPromotion;
 import com.minh.order_service.entity.OrderSagaState;
 import com.minh.order_service.enums.*;
+import com.minh.order_service.grpc.client.EventGrpcClient;
 import com.minh.order_service.grpc.client.PaymentGrpcClient;
 import com.minh.order_service.grpc.client.ProductGrpcClient;
 import com.minh.order_service.grpc.client.SupportGrpcClient;
@@ -33,6 +34,8 @@ import com.minh.order_service.repository.OrderPromotionRepository;
 import com.minh.order_service.repository.OrderRepository;
 import com.minh.order_service.saga.SagaOrchestrator;
 import com.minh.order_service.service.*;
+import event_service.UpdateVoucherRequest;
+import event_service.UpdateVoucherResponse;
 import game_service.GetShippingAddressRequest;
 import game_service.GetShippingAddressResponse;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +61,7 @@ import product_service.ProductVariantRes;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -76,6 +80,7 @@ public class OrderServiceImpl implements OrderService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final OrderPromotionService orderPromotionService;
     private final OrderSagaStateService orderSagaStateService;
+    private final EventGrpcClient eventGrpcClient;
 
     @Autowired
     public void setOrchestrator(@Lazy SagaOrchestrator orchestrator) {
@@ -143,7 +148,7 @@ public class OrderServiceImpl implements OrderService {
             /// Get product variant for each item.
             List<OrderItem> items = orderItemService.getAllByOrderId(order.getId());
             /// Mapping id -> OrderItem.
-            Map<String, OrderItem> itemMap = items.stream().collect(java.util.stream.Collectors.toMap(OrderItem::getId, item -> item));
+            Map<String, OrderItem> itemMap = items.stream().collect(Collectors.toMap(OrderItem::getId, item -> item));
 
             List<OrderItemAndProductVariantId> ids = items.stream().map(item -> OrderItemAndProductVariantId.newBuilder().setOrderItemId(item.getId()).setProductVariantId(item.getProductVariantId()).build()).toList();
             if (!ids.isEmpty()) {
@@ -153,7 +158,7 @@ public class OrderServiceImpl implements OrderService {
                     throw new RuntimeException(messageCommon.getMessage(ErrorCode.INTERNAL_SERVER_ERROR));
                 }
 
-                List<product_service.ProductVariantRes> productVariantRes = res.getProductVariantsList();
+                List<ProductVariantRes> productVariantRes = res.getProductVariantsList();
                 List<OrderItemRes> orderItemResList = new ArrayList<>();
                 for (ProductVariantRes productVariant : productVariantRes) {
                     OrderItem orderItem = itemMap.get(productVariant.getOrderItemId());
@@ -293,10 +298,38 @@ public class OrderServiceImpl implements OrderService {
 
         /// Apply voucher when request has voucher code.
         if (StringUtils.hasText(request.getVoucherId())) {
-            /// Code will be implemented here.
+            /// Thực hiện một gRPC call tới cho event-service. Ưu tiên dữ nguyên thiết kế Database hiện tại. Giữ voucher ở event-service.
+            String username = AppUtils.getUsername();
+            String voucherId = request.getVoucherId();
+            UpdateVoucherRequest uvRequest = UpdateVoucherRequest.newBuilder()
+                    .setUsername(username)
+                    .setVoucherId(voucherId)
+                    .build();
+
+            UpdateVoucherResponse response = eventGrpcClient.updateVoucher(uvRequest);
+            if (response.getStatus() != 200) {
+                return ResponseData.builder()
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .message(response.getMessages())
+                        .data(null)
+                        .build();
+            }
         }
 
-        OrderCreatedEvent event = OrderCreatedEvent.builder().orderId(orderId).currency(request.getCurrency()).orderItemDtos(request.getOrderItemDtos().stream().map(item -> OrderItemCreatedEvent.builder().id(item.getId()).productVariantId(item.getProductVariantId()).quantity(item.getQuantity()).build()).toList()).paymentMethod(request.getPaymentMethod()).productId(request.getProductId()).total(request.getTotal()).username(AppUtils.getUsername()).build();
+        OrderCreatedEvent event = OrderCreatedEvent.builder()
+                .orderId(orderId)
+                .currency(request.getCurrency())
+                .orderItemDtos(request.getOrderItemDtos().stream()
+                        .map(item -> OrderItemCreatedEvent.builder()
+                                .id(item.getId())
+                                .productVariantId(item.getProductVariantId())
+                                .quantity(item.getQuantity())
+                                .build())
+                        .toList())
+                .paymentMethod(request.getPaymentMethod())
+                .productId(request.getProductId()).total(request.getTotal())
+                .username(AppUtils.getUsername())
+                .build();
         event.setMessageId(AppUtils.generateUUIDv7());
         orchestrator.startSaga(event);
 
@@ -402,5 +435,4 @@ public class OrderServiceImpl implements OrderService {
             }
         });
     }
-
 }

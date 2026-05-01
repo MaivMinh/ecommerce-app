@@ -6,6 +6,7 @@ import com.minh.event_service.payload.request.SearchVouchersRequest;
 import com.minh.event_service.payload.request.UpdateVoucherRequest;
 import com.minh.event_service.payload.request.VoucherRequest;
 import com.minh.event_service.payload.response.VoucherResponse;
+import event_service.UpdateVoucherResponse;
 import jakarta.validation.Valid;
 
 import java.util.ArrayList;
@@ -39,4 +40,11 @@ public interface VoucherService {
      * @return: Danh sách các voucher của người dùng.
      */
     ResponseData redeemVoucher(String username);
+
+    /**
+     * Phương thức thực hiện cập nhật lại voucher nhưng thông qua gRPC call.
+     * @param request: Chứa voucher id và username.
+     * @return: Kết quả cập nhật.
+     */
+    UpdateVoucherResponse updateVoucherGrpc(event_service.UpdateVoucherRequest request);
 }

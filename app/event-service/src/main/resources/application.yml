@@ -1,6 +1,5 @@
 server:
   port: 8089
-
 spring:
   application:
     name: event-service
@@ -9,8 +8,6 @@ spring:
   threads:
     virtual:
       enabled: true
-
-
   sql:
     init:
       schema-locations: classpath:schema.sql

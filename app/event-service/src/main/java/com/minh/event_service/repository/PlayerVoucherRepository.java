@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PlayerVoucherRepository extends JpaRepository<PlayerVoucher, String> {
-
+    PlayerVoucher findByVoucherIdAndUsername(String voucherId, String username);
 }

@@ -6,18 +6,7 @@ option java_outer_classname = "EventProto";
 option java_package = "event_service";
 
 service EventService {
-  rpc StreamMilestone(MilestoneRequest) returns (stream MilestoneResponse);
   rpc UpdateVoucher(UpdateVoucherRequest) returns (UpdateVoucherResponse);
-}
-
-message MilestoneRequest {
-  string event_id = 1;
-}
-message MilestoneResponse {
-  string event_id = 1;
-  string milestone_code = 2;
-  string description = 3;
-  string username = 4;
 }
 
 message UpdateVoucherRequest {
