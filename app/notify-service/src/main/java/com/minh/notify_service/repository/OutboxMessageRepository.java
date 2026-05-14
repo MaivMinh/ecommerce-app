@@ -21,5 +21,5 @@ public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, St
            \s""", nativeQuery = true)
     List<OutboxMessage> findTopNUnprocessedMessage(@Param(value = "N") int N);
 
-    boolean existsByMessageId(String messageId);
+    boolean existsByOrderId(String orderId);
 }

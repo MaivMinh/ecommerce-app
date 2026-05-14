@@ -36,19 +36,6 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
     @Modifying
     @Query(value = """
-                update product_variants pv
-                set pv.product_id = :#{#variant.productId},
-                    pv.size = :#{#variant.size},
-                    pv.color_name = :#{#variant.colorName},
-                    pv.color_hex = :#{#variant.colorHex},
-                    pv.price = :#{#variant.price},
-                    pv.original_price = :#{#variant.originalPrice}
-                where pv.id = :#{#variant.id}
-            """, nativeQuery = true)
-    void updateProductVariantExcludeQuantity(@Param(value = "variant") ProductVariant productVariant);
-
-    @Modifying
-    @Query(value = """
              update product_variants pv set pv.quantity = pv.quantity - :quantity   \s
              where pv.id = :id and pv.quantity >= :quantity
             \s""", nativeQuery = true)

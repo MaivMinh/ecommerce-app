@@ -5,6 +5,7 @@ import com.minh.common.constants.ErrorCode;
 import com.minh.common.constants.ResponseMessages;
 import com.minh.common.events.OrderCreatedEvent;
 import com.minh.common.events.OrderItemCreatedEvent;
+import com.minh.common.events.ProductReleasedEvent;
 import com.minh.common.functions.input.NotifyOrderCancelledEvent;
 import com.minh.common.functions.input.NotifyOrderCompletedEvent;
 import com.minh.common.functions.input.OrderedItem;
@@ -81,6 +82,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderPromotionService orderPromotionService;
     private final OrderSagaStateService orderSagaStateService;
     private final EventGrpcClient eventGrpcClient;
+    private final String linkToOrders = "http://localhost:5173/orders/";
 
     @Autowired
     public void setOrchestrator(@Lazy SagaOrchestrator orchestrator) {
@@ -340,10 +342,6 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public void rejectOrder(OrderSagaState state) {
         try {
-            if (state.getStatus().equals(SagaStatus.COMPLETED) || state.getStatus().equals(SagaStatus.FAILED)) {
-                log.error("Saga {} has already been completed or failed. No need to reject order.", state.getSagaId());
-                return;
-            }
             if (!StringUtils.hasText(state.getSagaId()) || !StringUtils.hasText(state.getOrderId())) {
                 throw new RuntimeException("Saga state is null or has invalid sagaId");
             }
@@ -363,17 +361,17 @@ public class OrderServiceImpl implements OrderService {
             NotifyOrderCancelledEvent event = NotifyOrderCancelledEvent.builder()
                     .orderId(state.getOrderId())
                     .items(orderItems.stream().map(item -> OrderedItem.builder()
-                            .id(item.getId())
-                            .productVariantId(item.getProductVariantId())
-                            .quantity(item.getQuantity())
-                            .price(item.getPrice())
-                            .build())
+                                    .id(item.getId())
+                                    .productVariantId(item.getProductVariantId())
+                                    .quantity(item.getQuantity())
+                                    .price(item.getPrice())
+                                    .build())
                             .toList())
                     .build();
             event.setTemplateCode(NotifyTemplateCode.ORDER_FAILED.name());
             event.setMetaData(new HashMap<>());
             event.getMetaData().put("createdAt", order.getCreatedAt());
-            event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/" + order.getId());
+            event.getMetaData().put("redirectUrl", this.linkToOrders + order.getId());
             event.setRecipient(Map.of("username", state.getUsername()));
             CompletableFuture<SendResult<String, Object>> sendResult = kafkaTemplate.send(KafkaTopics.NOTIFY_ORDER_FAILED, state.getSagaId(), event);
             this.handleSendResult(sendResult, "Thông báo đơn hàng bị hủy đã được gửi tới Kafka cho orderId: " + state.getOrderId(), "Có lỗi xảy ra khi gửi thông báo đơn hàng bị hủy tới Kafka cho orderId: " + state.getOrderId());
@@ -390,8 +388,7 @@ public class OrderServiceImpl implements OrderService {
             return;
         }
         if (!state.getCurrentStep().equals(SagaStep.PAYMENT_PROCESSED)) {
-            log.error("Invalid saga step for saga {}. Expected: {}, actual: {}", state.getSagaId(), SagaStep.PAYMENT_PROCESSED, state.getCurrentStep());
-            return;
+            throw new RuntimeException("Invalid saga step. Expected: " + SagaStep.PAYMENT_PROCESSED + ", actual: " + state.getCurrentStep());
         }
         if (!StringUtils.hasText(state.getSagaId()) || !StringUtils.hasText(state.getOrderId())) {
             throw new RuntimeException("Saga state is null or has invalid sagaId");
@@ -420,7 +417,7 @@ public class OrderServiceImpl implements OrderService {
         event.setTemplateCode(NotifyTemplateCode.ORDER_CONFIRMATION.name());
         event.setMetaData(new HashMap<>());
         event.getMetaData().put("createdAt", order.getCreatedAt());
-        event.getMetaData().put("redirectUrl", "http://localhost:5173/orders/" + order.getId());
+        event.getMetaData().put("redirectUrl", this.linkToOrders + order.getId());
         event.setRecipient(Map.of("username", state.getUsername()));
         CompletableFuture<SendResult<String, Object>> sendResult = kafkaTemplate.send(KafkaTopics.ORDER_COMPLETED, state.getSagaId(), event);
         this.handleSendResult(sendResult, "Thông báo hoàn tất đơn hàng đã được gửi tới Kafka cho orderId: " + state.getOrderId(), "Có lỗi xảy ra khi gửi thông báo hoàn tất đơn hàng tới Kafka cho orderId: " + state.getOrderId());

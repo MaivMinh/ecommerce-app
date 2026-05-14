@@ -9,7 +9,6 @@
         <relativePath>../bom-service/pom.xml</relativePath>
     </parent>
     <artifactId>notify-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>notify-service</name>
     <description>Notify service for e-commerce</description>
     <url/>

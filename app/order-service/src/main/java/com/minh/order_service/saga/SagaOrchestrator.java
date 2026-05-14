@@ -20,6 +20,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -77,7 +79,7 @@ public class SagaOrchestrator {
 
     @KafkaListener(
             topics = KafkaTopics.PRODUCT_RESERVED,
-            groupId = "order-service"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handleProductReservedEvent(ProductReservedEvent event) {
@@ -107,7 +109,7 @@ public class SagaOrchestrator {
 
     @KafkaListener(
             topics = KafkaTopics.PAYMENT_PROCESSED,
-            groupId = "order-service"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handlePaymentProcessedEvent(PaymentProcessedEvent event) {
@@ -136,6 +138,7 @@ public class SagaOrchestrator {
             failedEvent.setTimestamp(event.getTimestamp());
             saved.setCurrentStep(SagaStep.ORDER_COMPLETION_FAILED);
             orderSagaStateRepository.save(saved);
+
             outboxMessageService.store(KafkaTopics.ORDER_COMPLETION_FAILED, failedEvent, OrderCompletionFailedEvent.class.getName());
         }
     }
@@ -145,20 +148,13 @@ public class SagaOrchestrator {
 
     @KafkaListener(
             topics = KafkaTopics.ORDER_COMPLETION_FAILED,
-            groupId = "order-service"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handleOrderCancelledEvent(OrderCompletionFailedEvent event) {
         log.info("Saga Event Rollback: Received OrderCompletionFailedEvent for order [{}]. Starting compensation flow.", event.getOrderId());
-
-        OrderSagaState state = findSaga(event.getSagaId());
-        if (!state.getCurrentStep().equals(SagaStep.ORDER_COMPLETION_FAILED)) {
-            log.error("Invalid OrderCompletionFailedEvent event for saga {}: current step is {}, expected ORDER_COMPLETION_FAILED", event.getSagaId(), state.getCurrentStep());
-            return;
-        }
-
         RefundProcessedPaymentCommand command = RefundProcessedPaymentCommand.builder()
-                .orderId(state.getOrderId())
+                .orderId(event.getOrderId())
                 .paymentId(event.getPaymentId())
                 .paymentMethod(event.getPaymentMethod())
                 .username(event.getUsername())
@@ -166,54 +162,37 @@ public class SagaOrchestrator {
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
         outboxMessageService.store(KafkaTopics.PAYMENT_REFUND, command, RefundProcessedPaymentCommand.class.getName());
-        log.info("Saga [{}] processing compensation for order [{}]. Sent RefundProcessedPaymentCommand to Kafka.", state.getSagaId(), state.getOrderId());
+        log.info("Saga [{}] processing compensation for order [{}]. Sent RefundProcessedPaymentCommand to Kafka.", event.getSagaId(), event.getOrderId());
     }
 
     @KafkaListener(
             topics = KafkaTopics.PAYMENT_FAILED,
-            groupId = "order-service"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handlePaymentFailedEvent(PaymentFailedEvent event) {
         log.info("Saga Event Rollback: Received PaymentFailedEvent for order [{}]. ", event.getOrderId());
-        OrderSagaState state = findSaga(event.getSagaId());
-        if (!state.getCurrentStep().equals(SagaStep.PRODUCT_RESERVED)) {
-            log.error("Invalid PaymentFailedEvent event for saga {}: current step is {}, expected PRODUCT_RESERVED", event.getSagaId(), state.getCurrentStep());
-            return;
-        }
-        state.setCurrentStep(SagaStep.PAYMENT_FAILED);
-        orderSagaStateRepository.save(state);
-
         ReleaseProductCommand command = ReleaseProductCommand.builder()
-                .orderId(state.getOrderId())
+                .orderId(event.getOrderId())
                 .username(event.getUsername())
                 .errorMsg(event.getErrorMsg())
                 .build();
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
         outboxMessageService.store(KafkaTopics.PRODUCT_RELEASE, command, ReleaseProductCommand.class.getName());
-        log.info("Saga [{}] compensation completed for order [{}].", state.getSagaId(), state.getOrderId());
+        log.info("Saga [{}] compensation completed for order [{}].", event.getSagaId(), event.getOrderId());
     }
 
     @KafkaListener(
             topics = KafkaTopics.PAYMENT_REFUNDED,
-            groupId = "order-service"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handlePaymentRefundedEvent(PaymentRefundedEvent event) {
         log.info("Saga Event Rollback: Received PaymentRefundedEvent for order [{}]. Continuing compensation flow.", event.getOrderId());
-
-        OrderSagaState state = findSaga(event.getSagaId());
-        if (!state.getCurrentStep().equals(SagaStep.ORDER_COMPLETION_FAILED)) {
-            log.error("Invalid PaymentRefundedEvent event for saga {}: current step is {}, expected ORDER_COMPLETION_FAILED", event.getSagaId(), state.getCurrentStep());
-            return;
-        }
-        state.setCurrentStep(SagaStep.PAYMENT_REFUNDED);
-        orderSagaStateRepository.save(state);
-
         /// Create product release event để gửi sang product-service, yêu cầu release lại sản phẩm đã reserve.
         ReleaseProductCommand command = ReleaseProductCommand.builder()
-                .orderId(state.getOrderId())
+                .orderId(event.getOrderId())
                 .username(event.getUsername())
                 .errorMsg(event.getErrorMsg())
                 .build();
@@ -222,31 +201,26 @@ public class SagaOrchestrator {
 
         /// Thanh toán bị refund, cần release lại sản phẩm đã reserve.
         outboxMessageService.store(KafkaTopics.PRODUCT_RELEASE, command, ReleaseProductCommand.class.getName());
-        log.info("Saga [{}] processing compensation for order [{}]. Sent ProductReleaseCommand to Kafka.", state.getSagaId(), state.getOrderId());
+        log.info("Saga [{}] processing compensation for order [{}]. Sent ProductReleaseCommand to Kafka.", event.getSagaId(), event.getOrderId());
     }
 
 
     @KafkaListener(
             topics = KafkaTopics.PRODUCT_RELEASED,
-            groupId = "order-service"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handleProductReleasedEvent(ProductReleasedEvent event) {
         log.info("Saga Event Rollback: Received ProductReleasedEvent for order [{}]. Finalizing compensation flow.", event.getOrderId());
 
         OrderSagaState state = findSaga(event.getSagaId());
-        if (!state.getCurrentStep().equals(SagaStep.PAYMENT_REFUNDED) && !state.getCurrentStep().equals(SagaStep.PAYMENT_FAILED)) {
-            log.error("Invalid ProductReleasedEvent event for saga {}: current step is {}, expected PAYMENT_REFUNDED", event.getSagaId(), state.getCurrentStep());
-            return;
-        }
-        state.setCurrentStep(SagaStep.PRODUCT_RELEASED);
         orderService.rejectOrder(state);
         log.info("Saga [{}] compensation completed for order [{}].", state.getSagaId(), state.getOrderId());
     }
 
     @KafkaListener(
             topics = KafkaTopics.PRODUCT_RESERVATION_FAILED,
-            groupId = "order-service"
+            containerFactory = "kafkaListenerContainerFactory"
     )
     @Transactional
     public void handleProductInsufficientEvent(ProductReservationFailedEvent event) {

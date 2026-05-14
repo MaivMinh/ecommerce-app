@@ -14,14 +14,20 @@ spring:
       enabled: true
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      timeout: 2000
+      repositories:
+        enabled: false
   sql:
     init:
       schema-locations: classpath:schema.sql
       mode: ${SPRING_SQL_INIT_MODE:never}
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_payment}
@@ -30,6 +36,13 @@ spring:
   messages:
     basename: i18n/messages
     encoding: UTF-8
+
+
+kafka:
+  consumer:
+    group-id: ${KAFKA_CONSUMER_GROUP_ID:payment-service}
+    max-poll-records: ${KAFKA_CONSUMER_MAX_POLL_RECORDS:300}
+    concurrency: ${KAFKA_CONSUMER_CONCURRENCY:6}
 
 
 management:
@@ -42,6 +55,11 @@ management:
     web:
       exposure:
         include: "*"
+  otlp: # Vì sẽ push metrics, traces qua cho Otel Collector nên ở đây phải là otlp.
+    metrics:
+      export:
+        url: ${OTLP_METRICS_EXPORT_URL:http://localhost:4318/v1/metrics}
+        step: 5s
   health:
     readinessstate:
       enabled: true

@@ -68,9 +68,9 @@ public class TimelineProcessor {
 
         if (event.getType().equals(GameEventType.GAME_RESULT.toString())) {
             log.info("Preparing game result for event {}", event.getEventId());
-            String snapshotKey = "event:" + event.getEventId() + ":ranking:snapshot";
+            String rankingSnapshotKey = "event:" + event.getEventId() + ":ranking:snapshot";
 
-            List<Object> rawData = redisTemplate.opsForList().range(snapshotKey, 0, -1);
+            List<Object> rawData = redisTemplate.opsForList().range(rankingSnapshotKey, 0, -1);
             if (!CollectionUtils.isEmpty(rawData)) {
                 List<UserScoreData> result = rawData.stream()
                         .filter(o -> o instanceof UserScoreData)
@@ -136,11 +136,11 @@ public class TimelineProcessor {
             }
 
             /// Lưu lại vào Redis để phục vụ việc trả về kết quả sau này.
-            String snapshotKey = "event:" + event.getEventId() + ":ranking:snapshot";
-            redisTemplate.delete(snapshotKey);
-            /// Cần phải chuyển về mảng. Nếu không, lát nữa lấy lên thành List<Object> thì Object = List<UserScoreData>.
+            String rankingSnapshotKey = "event:" + event.getEventId() + ":ranking:snapshot";
+            redisTemplate.delete(rankingSnapshotKey);
+            /// Cần phải chuyển về mảng. Nếu không, lát nữa lấy lên thành List<Object> thì Object = List<UserScoreData>. => List<List<UserScoreData>>
             if (!CollectionUtils.isEmpty(ranking)) {
-                redisTemplate.opsForList().rightPushAll(snapshotKey, ranking.toArray());
+                redisTemplate.opsForList().rightPushAll(rankingSnapshotKey, ranking.toArray());
             }
 
 

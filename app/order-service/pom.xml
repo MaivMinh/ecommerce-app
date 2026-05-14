@@ -48,7 +48,7 @@
         <dependency>
             <groupId>net.devh</groupId>
             <artifactId>grpc-client-spring-boot-starter</artifactId>
-            <version>${grpc.client.saga}</version>
+            <version>${grpc-spring-boot-starter.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>

@@ -6,17 +6,26 @@ import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import io.grpc.ManagedChannelBuilder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import payment_service.PaymentServiceGrpc;
 import product_service.ProductServiceGrpc;
 
 @Configuration
 @RequiredArgsConstructor
 public class GrpcClientConfig {
-    private final Environment env;
     private final TimeLimiterRegistry timeLimiterRegistry;
+
+    @Value("${app.grpc.server.product-service:localhost:9091}")
+    private String productServiceAddress;
+    @Value("${app.grpc.server.support-service:localhost:9096}")
+    private String supportServiceAddress;
+    @Value("${app.grpc.server.payment-service:localhost:9095}")
+    private String paymentServiceAddress;
+    @Value("${app.grpc.server.event-service:localhost:9097}")
+    private String eventServiceAddress;
+
 
     @Bean
     public TimeLimiter productServiceTimeLimiter() {
@@ -40,25 +49,21 @@ public class GrpcClientConfig {
 
     @Bean
     public ProductServiceGrpc.ProductServiceBlockingStub productServiceBlockingStub() {
-        String address = env.getProperty("PRODUCT_GRPC_SERVER", "localhost:9091");  /// Nếu sử dụng các version grpc cũ hơn thì loại bỏ static phía trước.
-        return ProductServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget(address).usePlaintext().keepAliveWithoutCalls(true).build());
+        return ProductServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget(productServiceAddress).usePlaintext().keepAliveWithoutCalls(true).build());
     }
 
     @Bean
     public SupportServiceGrpc.SupportServiceBlockingStub supportServiceBlockingStub() {
-        String address = env.getProperty("SUPPORT_GRPC_SERVER", "localhost:9096");
-        return SupportServiceGrpc.newBlockingStub(io.grpc.ManagedChannelBuilder.forTarget(address).keepAliveWithoutCalls(true).usePlaintext().build());
+        return SupportServiceGrpc.newBlockingStub(io.grpc.ManagedChannelBuilder.forTarget(supportServiceAddress).keepAliveWithoutCalls(true).usePlaintext().build());
     }
 
     @Bean
     public PaymentServiceGrpc.PaymentServiceBlockingStub paymentServiceBlockingStub() {
-        String address = env.getProperty("PAYMENT_GRPC_SERVER", "localhost:9095");
-        return PaymentServiceGrpc.newBlockingStub(io.grpc.ManagedChannelBuilder.forTarget(address).keepAliveWithoutCalls(true).usePlaintext().build());
+        return PaymentServiceGrpc.newBlockingStub(io.grpc.ManagedChannelBuilder.forTarget(paymentServiceAddress).keepAliveWithoutCalls(true).usePlaintext().build());
     }
 
     @Bean
     public EventServiceGrpc.EventServiceBlockingStub eventServiceBlockingStub() {
-        String address = env.getProperty("EVENT_GRPC_SERVER", "localhost:9097");
-        return EventServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget(address).keepAliveWithoutCalls(true).usePlaintext().build());
+        return EventServiceGrpc.newBlockingStub(ManagedChannelBuilder.forTarget(eventServiceAddress).keepAliveWithoutCalls(true).usePlaintext().build());
     }
 }

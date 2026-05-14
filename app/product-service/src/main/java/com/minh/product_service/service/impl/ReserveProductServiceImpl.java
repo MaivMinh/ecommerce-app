@@ -46,7 +46,8 @@ public class ReserveProductServiceImpl implements ReserveProductService {
             return;
         }
         if (CollectionUtils.isEmpty(command.getReserveProductItems())) {
-            throw new RuntimeException("Không có sản phẩm nào để đặt chỗ trong đơn hàng: " + command.getOrderId());
+            log.warn("Không có sản phẩm nào để đặt chỗ trong đơn hàng: " + command.getOrderId());
+            return;
         }
         List<ReserveProduct> reserveProducts = new ArrayList<>();
         command.getReserveProductItems().forEach(item -> {
@@ -87,7 +88,8 @@ public class ReserveProductServiceImpl implements ReserveProductService {
         String orderId = command.getOrderId();
         List<ReserveProduct> reserveProducts = reserveProductRepository.findAllByOrderId(orderId);
         if (reserveProducts.isEmpty()) {
-            throw new RuntimeException("Không có sản phẩm nào cho đơn hàng này: " + orderId);
+            log.warn("Không có sản phẩm nào cho đơn hàng này: " + orderId);
+            return;
         }
         reserveProducts.forEach(reserveProduct -> {
             /// Trả lại số lượng sản phẩm vào kho.

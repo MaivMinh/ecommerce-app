@@ -25,8 +25,7 @@ public class TimelineWorker {
     public void poll() {
         long now = System.currentTimeMillis();
 
-        Set<Object> events = redisTemplate.opsForZSet()
-                .rangeByScore(TIMELINE_KEY, 0, now, 0, BATCH_SIZE);
+        Set<Object> events = redisTemplate.opsForZSet().rangeByScore(TIMELINE_KEY, 0, now, 0, BATCH_SIZE);
 
         if (events == null || events.isEmpty()) return;
 

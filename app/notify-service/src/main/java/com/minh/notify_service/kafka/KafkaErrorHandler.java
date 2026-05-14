@@ -3,6 +3,7 @@ package com.minh.notify_service.kafka;
 import com.minh.common.functions.input.NotifyOrderCancelledEvent;
 import com.minh.common.functions.input.NotifyOrderCompletedEvent;
 import com.minh.common.kafka.KafkaTopics;
+import com.minh.notify_service.outbox.OutboxMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Service;
 public class KafkaErrorHandler {
 
     @Bean
-    public DefaultErrorHandler paymentKafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
+    public DefaultErrorHandler paymentKafkaErrorHandler(KafkaTemplate<String, Object> kafkaTemplate, OutboxMessageService outboxMessageService) {
 
         ExponentialBackOffWithMaxRetries backOff = new ExponentialBackOffWithMaxRetries(3);
         backOff.setInitialInterval(2000L);
@@ -27,20 +28,10 @@ public class KafkaErrorHandler {
                     Object message = record.value();
                     if (message instanceof NotifyOrderCompletedEvent event) {
                         log.info("Processing failed for NotifyOrderCompletedEvent with orderID: {}. Exception: {}", event.getOrderId(), exception.getMessage());
-                        kafkaTemplate.send(
-                                KafkaTopics.NOTIFICATION_FAILED_DLT,
-                                event.getOrderId(),
-                                event
-                        );
-                        log.info("Sent NotifyOrderCompletedEvent to DLT after retries. Message: {}", message);
+                        outboxMessageService.store(record.topic(), event, event.getOrderId(), event.getClass().getName());
                     } else if (message instanceof NotifyOrderCancelledEvent event) {
                         log.info("Processing failed for NotifyOrderCancelledEvent with orderID: {}. Exception: {}", event.getOrderId(), exception.getMessage());
-                        kafkaTemplate.send(
-                                KafkaTopics.NOTIFICATION_FAILED_DLT,
-                                event.getOrderId(),
-                                event
-                        );
-                        log.info("Sent NotifyOrderCancelledEvent to DLT after retries. Message: {}", message);
+                        outboxMessageService.store(record.topic(), event, event.getOrderId(), event.getClass().getName());
                     } else {
                         log.error("Received unknown event type: {}", message.getClass().getName());
                     }

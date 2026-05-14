@@ -1,6 +1,7 @@
 package com.minh.product_service.service.impl;
 
 import com.minh.common.constants.ErrorCode;
+import com.minh.common.exception.BusinessException;
 import com.minh.common.message.MessageCommon;
 import com.minh.product_service.dto.ProductVariantDTO;
 import com.minh.product_service.entity.ProductVariant;
@@ -79,6 +80,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
     /**
      * Hàm thực hiện lấy danh sách các biến thể sản phẩm dựa trên danh sách ID của chúng.
+     *
      * @param productVariantIds: Danh sách các ID của product variant.
      * @return List<ProductVariantDTO>
      */
@@ -126,7 +128,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Transactional
     public void decreaseProductVariantQuantity(String productVariantId, Integer quantity) {
         if (Objects.isNull(quantity) || quantity <= 0) {
-            throw new IllegalArgumentException("Số lượng cần đặt phải lớn hơn 0");
+            throw new BusinessException("Số lượng cần đặt phải lớn hơn 0");
         }
 
         ProductVariant variant = productVariantRepository.findById(productVariantId).orElseThrow(
@@ -134,12 +136,12 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         );
 
         if (variant.getQuantity() < quantity) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.ProductVariant.INSUFFICIENT_QUANTITY, quantity, variant.getQuantity()));
+            throw new BusinessException(messageCommon.getMessage(ErrorCode.ProductVariant.INSUFFICIENT_QUANTITY, quantity, variant.getQuantity()));
         }
 
-        int updatedRows = productVariantRepository.atomicUpdateQuantity(productVariantId,quantity);
+        int updatedRows = productVariantRepository.atomicUpdateQuantity(productVariantId, quantity);
         if (updatedRows == 0) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.ProductVariant.ATOMIC_UPDATE_FAILED, productVariantId));
+            throw new BusinessException(messageCommon.getMessage(ErrorCode.ProductVariant.ATOMIC_UPDATE_FAILED, productVariantId));
         }
         log.info("Giảm số lượng sản phẩm của biến thể thành công!");
     }

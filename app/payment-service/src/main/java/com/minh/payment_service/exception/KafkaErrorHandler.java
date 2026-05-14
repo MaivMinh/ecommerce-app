@@ -40,7 +40,7 @@ public class KafkaErrorHandler {
                         outboxMessageService.store(KafkaTopics.PAYMENT_FAILED, event, event.getClass().getName());
                     } else if (message instanceof RefundProcessedPaymentCommand command) {
                         command.setMessageId(command.getMessageId());
-                        outboxMessageService.store(KafkaTopics.GLOBAL_TECHNICAL_DLT, command, command.getClass().getName());
+                        outboxMessageService.store(record.topic(), command, command.getClass().getName());
                     } else {
                         log.error("Received unknown message type: {}", message.getClass().getName());
                     }

@@ -8,6 +8,9 @@ import com.minh.common.events.ProductReleasedEvent;
 import com.minh.common.events.ProductReservationFailedEvent;
 import com.minh.common.events.ProductReservedEvent;
 import com.minh.common.events.SagaEvent;
+import com.minh.common.functions.input.NotifyEvent;
+import com.minh.common.functions.input.NotifyOrderCancelledEvent;
+import com.minh.common.functions.input.NotifyOrderCompletedEvent;
 import com.minh.common.utils.AppUtils;
 import com.minh.notify_service.entity.OutboxMessage;
 import com.minh.notify_service.repository.OutboxMessageRepository;
@@ -33,37 +36,16 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Override
-    public void store(String topic, SagaEvent event, String className) {
+    public void store(String topic, NotifyEvent event, String orderId, String className) {
         try {
             OutboxMessage message = OutboxMessage.builder()
                     .id(AppUtils.generateUUIDv7())
-                    .messageId(event.getMessageId())
+                    .orderId(orderId)
                     .processed(Boolean.FALSE)
                     .processedAt(null)
                     .type(MessageType.EVENT)
                     .topic(topic)
                     .payload(objectMapper.writeValueAsString(event))
-                    .className(className)
-                    .build();
-
-            outboxMessageRepository.save(message);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to serialize event payload", e);
-        }
-    }
-
-
-    @Override
-    public void store(String topic, SagaCommand command, String className) {
-        try {
-            OutboxMessage message = OutboxMessage.builder()
-                    .id(AppUtils.generateUUIDv7())
-                    .messageId(command.getMessageId())
-                    .processed(Boolean.FALSE)
-                    .processedAt(null)
-                    .type(MessageType.COMMAND)
-                    .topic(topic)
-                    .payload(objectMapper.writeValueAsString(command))
                     .className(className)
                     .build();
 
@@ -83,31 +65,15 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
         }
         String className = message.getClassName();
 
-        if (message.getType().equals(MessageType.COMMAND)) {
+        if (message.getType().equals(MessageType.EVENT)) {
             try {
-                if (className.contains("ReleaseProductCommand")) {
-                    ReleaseProductCommand command = objectMapper.readValue(message.getPayload(), ReleaseProductCommand.class);
-                    CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(message.getTopic(), command.getSagaId(), command);
+                if (className.contains("NotifyOrderCompletedEvent")) {
+                    NotifyOrderCompletedEvent event = objectMapper.readValue(message.getPayload(), NotifyOrderCompletedEvent.class);
+                    CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(message.getTopic(), event.getOrderId(), event);
                     this.handleSendResult(future, message);
-                } else {
-                    log.error("Không thể xác định loại message để publish. Message ID: {}, ClassName: {}", message.getId(), message.getClassName());
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Có lỗi xảy ra khi thực hiện publish Command", e);
-            }
-        } else if (message.getType().equals(MessageType.EVENT)) {
-            try {
-                if (className.contains("ProductReservationFailedEvent")) {
-                    ProductReservationFailedEvent event = objectMapper.readValue(message.getPayload(), ProductReservationFailedEvent.class);
-                    CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(message.getTopic(), event.getSagaId(), event);
-                    this.handleSendResult(future, message);
-                } else if (className.contains("ProductReservedEvent")) {
-                    ProductReservedEvent event = objectMapper.readValue(message.getPayload(), ProductReservedEvent.class);
-                    CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(message.getTopic(), event.getSagaId(), event);
-                    this.handleSendResult(future, message);
-                } else if (className.contains("ProductReleasedEvent")) {
-                    ProductReleasedEvent event = objectMapper.readValue(message.getPayload(), ProductReleasedEvent.class);
-                    CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(message.getTopic(), event.getSagaId(), event);
+                } else if (className.contains("NotifyOrderCancelledEvent")) {
+                    NotifyOrderCancelledEvent event = objectMapper.readValue(message.getPayload(), NotifyOrderCancelledEvent.class);
+                    CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(message.getTopic(), event.getOrderId(), event);
                     this.handleSendResult(future, message);
                 } else {
                     log.error("Không thể xác định loại message để publish. Message ID: {}, ClassName: {}", message.getId(), message.getClassName());
@@ -136,7 +102,7 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
     }
 
     @Override
-    public boolean isMessageProcessed(String messageId) {
-        return outboxMessageRepository.existsByMessageId(messageId);
+    public boolean isMessageProcessed(String orderId) {
+        return outboxMessageRepository.existsByOrderId(orderId);
     }
 }

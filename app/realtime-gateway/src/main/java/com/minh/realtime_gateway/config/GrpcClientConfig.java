@@ -5,6 +5,7 @@ import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import io.grpc.ManagedChannelBuilder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -13,7 +14,9 @@ import org.springframework.core.env.Environment;
 @RequiredArgsConstructor
 public class GrpcClientConfig {
     private final TimeLimiterRegistry timeLimiterRegistry;
-    private final Environment env;
+
+    @Value("${grpc.server.event-service:localhost:9097}")
+    private String eventServiceAddress;
 
     @Bean
     public TimeLimiter eventServiceTimeLimiter() {
@@ -22,8 +25,7 @@ public class GrpcClientConfig {
 
     @Bean
     public EventServiceGrpc.EventServiceStub eventServiceStub() {
-        String address = env.getProperty("EVENT_GRPC_SERVER", "localhost:9097");
-        return EventServiceGrpc.newStub(ManagedChannelBuilder.forTarget(address).usePlaintext().keepAliveWithoutCalls(true).build());
+        return EventServiceGrpc.newStub(ManagedChannelBuilder.forTarget(eventServiceAddress).usePlaintext().keepAliveWithoutCalls(true).build());
     }
 
 }

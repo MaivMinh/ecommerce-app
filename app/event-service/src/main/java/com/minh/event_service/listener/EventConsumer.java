@@ -5,16 +5,14 @@ import com.minh.event_service.DTO.WsMessage;
 import com.minh.event_service.service.GameLogicHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
 @Slf4j
-public class RealtimeEventConsumer {
+public class EventConsumer {
     private final ObjectMapper objectMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final GameLogicHandler gameLogicHandler;
 
     @KafkaListener(

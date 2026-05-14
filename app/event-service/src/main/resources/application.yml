@@ -12,9 +12,16 @@ spring:
     init:
       schema-locations: classpath:schema.sql
       mode: ${SPRING_SQL_INIT_MODE:never}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      timeout: 2000
+      repositories:
+        enabled: false
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_game}
@@ -25,6 +32,13 @@ spring:
   messages:
     basename: i18n/messages
     encoding: UTF-8
+
+
+kafka:
+  consumer:
+    group-id: ${KAFKA_CONSUMER_GROUP_ID:event-service}
+    max-poll-records: ${KAFKA_CONSUMER_MAX_POLL_RECORDS:300}
+    concurrency: ${KAFKA_CONSUMER_CONCURRENCY:6}
 
 management:
   endpoint:
@@ -55,6 +69,11 @@ management:
           server:
             requests:
               enabled: true
+  otlp: # Vì sẽ push metrics, traces qua cho Otel Collector nên ở đây phải là otlp.
+    metrics:
+      export:
+        url: ${OTLP_METRICS_EXPORT_URL:http://localhost:4318/v1/metrics}
+        step: 5s
 
 #Eureka client config.
 eureka:
@@ -72,10 +91,6 @@ cloudinary:
     key: ${CLOUDINARY_API_KEY:617116739785479}
     secret: ${CLOUDINARY_API_SECRET:l43AgCl03cV8V008w_FRC2U79zM}
 
-
-logging:
-  level:
-    net.devh.boot.grpc.server: DEBUG
 
 grpc:
   server:
@@ -104,11 +119,3 @@ resilience4j:
         wait-duration-in-open-state: 20000
         permitted-number-of-calls-in-half-open-state: 15
         sliding-window-type: COUNT_BASED
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: 6379
-      timeout: 2000
-      repositories:
-        enabled: false

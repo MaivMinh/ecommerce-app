@@ -22,7 +22,7 @@ spring:
       mode: ${SPRING_SQL_INIT_MODE:never}
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/ecommerce_product}
@@ -33,13 +33,17 @@ spring:
     encoding: UTF-8
   data:
     redis:
-      host: {REDIS_HOST:localhost}
+      host: ${REDIS_HOST:localhost}
       port: 6379
       timeout: 2000
       repositories:
         enabled: false
 
-
+kafka:
+  consumer:
+    group-id: ${KAFKA_CONSUMER_GROUP_ID:product-service}
+    max-poll-records: ${KAFKA_CONSUMER_MAX_POLL_RECORDS:300}
+    concurrency: ${KAFKA_CONSUMER_CONCURRENCY:6}
 
 
 management:
@@ -71,6 +75,11 @@ management:
           server:
             requests:
               enabled: true
+  otlp: # Vì sẽ push metrics, traces qua cho Otel Collector nên ở đây phải là otlp.
+    metrics:
+      export:
+        url: ${OTLP_METRICS_EXPORT_URL:http://localhost:4318/v1/metrics}
+        step: 5s
 
 #Eureka client config.
 eureka:
@@ -80,9 +89,3 @@ eureka:
       preferIpAddress: true
     register-with-eureka: true
     fetch-registry: true
-
-
-
-logging:
-  level:
-    net.devh.boot.grpc.server: DEBUG

@@ -4,7 +4,6 @@ public class ErrorCode {
     public static final String INTERNAL_SERVER_ERROR = "internal.server.error";
     public static final String INVALID_PARAMS = "invalid.params";
     public static final String INVALID_REQUEST = "invalid.request";
-    public static final String QUERY_EXECUTION_ERROR = "query.execution.error";
     public static final String FORBIDDEN = "forbidden";
 
     public static class Category {
@@ -35,7 +34,6 @@ public class ErrorCode {
         public static final String NOT_FOUND = "user.not.found";
         public static final String USERNAME_NOT_FOUND = "username.not.found";
         public static final String USERNAME_EXISTED = "user.username.existed";
-        public static final String EMAIL_EXISTED = "user.email.existed";
     }
 
     public static class Address {
@@ -44,10 +42,6 @@ public class ErrorCode {
 
     public static class Auth {
         public static final String UNAUTHORIZED = "unauthorized";
-        public static final String FORBIDDEN = "forbidden";
-        public static final String INVALID_CREDENTIALS = "invalid.credentials";
-        public static final String EXPIRED_TOKEN = "expired.token";
-        public static final String INVALID_TOKEN = "invalid.token";
     }
 
     public static class PaymentMethod {
@@ -89,7 +83,6 @@ public class ErrorCode {
 
     public static class Game {
         public static final String NOT_FOUND = "game.not.found";
-        public static final String INVALID_REQUEST = "game.invalid.request";
     }
 
     public static class Voucher {

@@ -16,7 +16,7 @@ import java.util.Map;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class RealtimeEventConsumer {
+public class RealtimeConsumer {
 
     private final ObjectMapper objectMapper;
     private final SessionRegistry sessionRegistry;
@@ -24,17 +24,14 @@ public class RealtimeEventConsumer {
 
     @KafkaListener(
             topics = {"event.realtime", "event.player.participate", "event.player.left"},
-            groupId = "realtime-gateway",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void consume(String message) {
         try {
-            RealtimeEvent event =
-                    objectMapper.readValue(message, RealtimeEvent.class);
+            RealtimeEvent event = objectMapper.readValue(message, RealtimeEvent.class);
 
             log.info("Received realtime event: {}", message);
             pushToClients(event);
-
             if (event.getType().equals(GameEventType.GAME_START.name())) {
                 milestoneService.updateMilestone(event);
             }

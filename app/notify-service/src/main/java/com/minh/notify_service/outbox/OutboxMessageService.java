@@ -1,16 +1,13 @@
 package com.minh.notify_service.outbox;
 
-import com.minh.common.commands.SagaCommand;
-import com.minh.common.events.SagaEvent;
+import com.minh.common.functions.input.NotifyEvent;
 import com.minh.notify_service.entity.OutboxMessage;
 
 import java.util.List;
 
 public interface OutboxMessageService {
 
-    void store(String topic, SagaEvent event, String className);
-
-    void store(String topic, SagaCommand command, String className);
+    void store(String topic, NotifyEvent event, String orderId, String className);
 
     void publishMessage(OutboxMessage message);
 

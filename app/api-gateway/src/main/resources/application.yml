@@ -4,7 +4,7 @@ spring:
   application:
     name: api-gateway
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   config:
     import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:8071/}
   threads:
@@ -134,6 +134,7 @@ management:
     circuitbreakers:
       enabled: true
 
+#Eureka client config.
 eureka:
   client:
     service-url:

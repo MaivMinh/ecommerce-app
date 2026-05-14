@@ -17,7 +17,7 @@ import java.time.Instant;
 public class OutboxMessage extends BaseEntity {
     @Id
     private String id;
-    private String messageId;
+    private String orderId;
     @Enumerated(EnumType.STRING)
     private MessageType type;
     private String payload;

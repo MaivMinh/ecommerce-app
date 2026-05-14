@@ -28,7 +28,6 @@ public class PublishMessageWorker {
         for (OutboxMessage message : messages) {
             service.submit(() -> {
                 try {
-                    log.info("Publishing message with id: {}", message.getId());
                     outboxMessageService.publishMessage(message);
                 } catch (Exception e) {
                     log.error("Có lỗi xảy ra khi publish message với id: {}, error: {}", message.getId(), e.getMessage());
