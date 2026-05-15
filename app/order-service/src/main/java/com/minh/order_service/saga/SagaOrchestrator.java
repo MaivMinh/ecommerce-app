@@ -124,6 +124,7 @@ public class SagaOrchestrator {
         OrderSagaState saved = orderSagaStateRepository.save(state);
 
         try {
+            if (event.getPaymentMethod().equals("VNPAY"))   throw new RuntimeException("Payment gateway VNPAY is currently unavailable. Please try again later.");
             orderService.completeOrder(saved);
             log.info("Saga [{}] completed successfully for order [{}].", state.getSagaId(), state.getOrderId());
         } catch (RuntimeException e) {

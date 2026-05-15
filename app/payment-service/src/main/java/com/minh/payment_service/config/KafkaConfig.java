@@ -16,6 +16,7 @@ import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,16 +25,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
+    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
-    @Value("${kafka.consumer.group-id}")
+    @Value("${kafka.consumer.group-id:payment-service}")
     private String groupId;
 
-    @Value("${kafka.consumer.max-poll-records}")
+    @Value("${kafka.consumer.max-poll-records:300}")
     private int maxPollRecords;
 
-    @Value("${kafka.consumer.concurrency}")
+    @Value("${kafka.consumer.concurrency:6}")
     private int concurrency;
 
     private DefaultErrorHandler paymentKafkaErrorHandler;
@@ -48,7 +49,7 @@ public class KafkaConfig {
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
 
         /// Reliability
         config.put(ProducerConfig.ACKS_CONFIG, "all");  /// wait for all ISR followers.

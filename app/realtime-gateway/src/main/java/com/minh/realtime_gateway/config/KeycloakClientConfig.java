@@ -14,7 +14,7 @@ public class KeycloakClientConfig {
     @Bean
     WebClient keycloakWebClient() {
         return WebClient.builder()
-                .baseUrl("http://localhost:9090")
+                .baseUrl("http://localhost:6060")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
                 .build();
     }

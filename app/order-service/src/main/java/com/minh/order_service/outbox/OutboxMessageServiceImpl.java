@@ -111,6 +111,7 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
                     log.error("Không thể xác định loại Command để publish. Message ID: {}, ClassName: {}", message.getId(), message.getClassName());
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new RuntimeException("Có lỗi xảy ra khi thực hiện publish Command", e);
             }
         } else if (message.getType().equals(MessageType.EVENT)) {
@@ -126,6 +127,7 @@ public class OutboxMessageServiceImpl implements OutboxMessageService {
                     log.error("Không thể xác định loại message để publish. Message ID: {}, ClassName: {}", message.getId(), message.getClassName());
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new RuntimeException("Có lỗi xảy ra khi thực hiện publish Event", e);
             }
         }

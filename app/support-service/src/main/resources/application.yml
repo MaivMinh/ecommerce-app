@@ -22,7 +22,7 @@ spring:
       kafka:
         binder:
           brokers:
-            - ${KAFKA_BROKER:localhost:9094}
+            - ${KAFKA_BROKER:localhost:9092}
   data:
     redis:
       host: ${REDIS_HOST:localhost}

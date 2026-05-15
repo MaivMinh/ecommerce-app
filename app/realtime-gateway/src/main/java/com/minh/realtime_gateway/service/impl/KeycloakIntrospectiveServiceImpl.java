@@ -20,13 +20,13 @@ import java.util.Map;
 public class KeycloakIntrospectiveServiceImpl implements KeycloakIntrospectionService {
     private final WebClient webClient;
 
-    @Value("${keycloak.realm}")
+    @Value("${keycloak.realm:e-commerce}")
     private String realm;
 
-    @Value("${keycloak.credentials.client-id}")
+    @Value("${keycloak.credentials.client-id:ecommerce-backend}")
     private String clientId;
 
-    @Value("${keycloak.credentials.client-secret}")
+    @Value("${keycloak.credentials.client-secret:8wCNwAKqyK74RWKPgf0lNm3DX50HfogV}")
     private String clientSecret;
 
     public Boolean introspect(String token) {
