@@ -107,7 +107,10 @@ resilience4j:
         permitted-number-of-calls-in-half-open-state: 15
         sliding-window-type: COUNT_BASED
 
-
 grpc:
-  server:
-    event-service: ${GRPC_SERVER_EVENT_SERVICE:static://localhost:9097}
+  client:
+    event-service:
+      address: ${GRPC_CLIENT_EVENT_SERVICE_ADDRESS:${GRPC_SERVER_EVENT_SERVICE:static://localhost:9097}}
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      keep-alive-without-calls: true

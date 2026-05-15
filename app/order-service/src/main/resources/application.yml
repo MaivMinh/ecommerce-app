@@ -145,10 +145,25 @@ resilience4j:
         permitted-number-of-calls-in-half-open-state: 15
         sliding-window-type: COUNT_BASED
 
-app:
-  grpc:
-    server:
-      product-service: ${GRPC_SERVER_PRODUCT_SERVICE:static://localhost:9091}
-      payment-service: ${GRPC_SERVER_PAYMENT_SERVICE:static://localhost:9095}
-      support-service: ${GRPC_SERVER_SUPPORT_SERVICE:static://localhost:9096}
-      event-service: ${GRPC_SERVER_EVENT_SERVICE:static://localhost:9097}
+grpc:
+  client:
+    product-service:
+      address: ${GRPC_CLIENT_PRODUCT_SERVICE_ADDRESS:${GRPC_SERVER_PRODUCT_SERVICE:static://localhost:9091}}
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      keep-alive-without-calls: true
+    payment-service:
+      address: ${GRPC_CLIENT_PAYMENT_SERVICE_ADDRESS:${GRPC_SERVER_PAYMENT_SERVICE:static://localhost:9095}}
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      keep-alive-without-calls: true
+    support-service:
+      address: ${GRPC_CLIENT_SUPPORT_SERVICE_ADDRESS:${GRPC_SERVER_SUPPORT_SERVICE:static://localhost:9096}}
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      keep-alive-without-calls: true
+    event-service:
+      address: ${GRPC_CLIENT_EVENT_SERVICE_ADDRESS:${GRPC_SERVER_EVENT_SERVICE:static://localhost:9097}}
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      keep-alive-without-calls: true

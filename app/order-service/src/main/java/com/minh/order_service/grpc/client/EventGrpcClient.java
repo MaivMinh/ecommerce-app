@@ -6,6 +6,7 @@ import event_service.UpdateVoucherResponse;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class EventGrpcClient {
-    @Autowired
+    @GrpcClient("event-service")
     private EventServiceGrpc.EventServiceBlockingStub eventServiceBlockingStub;
 
     @Autowired
@@ -22,7 +23,7 @@ public class EventGrpcClient {
     private UpdateVoucherResponse updateVoucher(UpdateVoucherRequest request, Throwable throwable) {
         String message = throwable instanceof CallNotPermittedException
                 ? "Không có kết nối tới Event Service. Vui lòng thử lại sau."
-                : "Có lỗi xảy ra khi gọi tới product service: "
+                : "Có lỗi xảy ra khi gọi tới event service: "
                   + throwable.getMessage();
 
         return UpdateVoucherResponse.newBuilder()

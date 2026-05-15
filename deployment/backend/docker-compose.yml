@@ -313,10 +313,10 @@ services:
       - KAFKA_CONSUMER_GROUP_ID=order-service
       - KAFKA_CONSUMER_MAX_POLL_RECORDS=300
       - KAFKA_CONSUMER_CONCURRENCY=6
-      - GRPC_SERVER_PRODUCT_SERVICE=static://product-service:9091
-      - GRPC_SERVER_PAYMENT_SERVICE=static://payment-service:9095
-      - GRPC_SERVER_SUPPORT_SERVICE=static://support-service:9096
-      - GRPC_SERVER_EVENT_SERVICE=static://event-service:9097
+      - GRPC_CLIENT_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
+      - GRPC_CLIENT_PAYMENT_SERVICE_ADDRESS=static://payment-service:9095
+      - GRPC_CLIENT_SUPPORT_SERVICE_ADDRESS=static://support-service:9096
+      - GRPC_CLIENT_EVENT_SERVICE_ADDRESS=static://event-service:9097
       - INSTANCE_ID=order-service
       - OTLP_METRICS_EXPORT_URL=http://otel-collector:4318/v1/metrics
       - OTLP_TRACING_EXPORT_URL=http://otel-collector:4318/v1/traces
@@ -413,7 +413,7 @@ services:
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-      - GRPC_SERVER_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
+      - GRPC_CLIENT_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
       - OTLP_METRICS_EXPORT_URL=http://otel-collector:4318/v1/metrics
       - OTLP_TRACING_EXPORT_URL=http://otel-collector:4318/v1/traces
     depends_on:
@@ -457,8 +457,8 @@ services:
       - KAFKA_CONSUMER_MAX_POLL_RECORDS=300
       - KAFKA_CONSUMER_CONCURRENCY=6
       - INSTANCE_ID=notify-service
-      - GRPC_SERVER_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
-      - GRPC_SERVER_SUPPORT_SERVICE_ADDRESS=static://support-service:9096
+      - GRPC_CLIENT_PRODUCT_SERVICE_ADDRESS=static://product-service:9091
+      - GRPC_CLIENT_SUPPORT_SERVICE_ADDRESS=static://support-service:9096
       - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME}
       - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD}
       - OTLP_METRICS_EXPORT_URL=http://otel-collector:4318/v1/metrics
@@ -507,7 +507,7 @@ services:
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-      - GRPC_SERVER_SUPPORT_SERVICE_ADDRESS=static://support-service:9096
+      - GRPC_CLIENT_SUPPORT_SERVICE_ADDRESS=static://support-service:9096
       - REDIS_HOST=redis
       - INSTANCE_ID=event-service
       - OTLP_METRICS_EXPORT_URL=http://otel-collector:4318/v1/metrics
@@ -553,7 +553,7 @@ services:
       - KAFKA_CONSUMER_GROUP_ID=realtime-gateway
       - KAFKA_CONSUMER_MAX_POLL_RECORDS=300
       - KAFKA_CONSUMER_CONCURRENCY=6
-      - GRPC_SERVER_EVENT_SERVICE=static://event-service:9097
+      - GRPC_CLIENT_EVENT_SERVICE_ADDRESS=static://event-service:9097
       - INSTANCE_ID=realtime-gateway
       - KAFKA_CREDENTIALS_CLIENT_SECRET=${KAFKA_CREDENTIALS_CLIENT_SECRET}
       - OTLP_METRICS_EXPORT_URL=http://otel-collector:4318/v1/metrics

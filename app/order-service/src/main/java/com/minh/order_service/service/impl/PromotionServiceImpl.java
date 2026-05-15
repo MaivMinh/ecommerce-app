@@ -50,23 +50,13 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public void createPromotion(CreatePromotionRequest event) {
-        if (!StringUtils.hasText(event.getPromotionId())) throw new IllegalArgumentException(messageCommon.getMessage(
-                ErrorCode.INVALID_PARAMS, "promotionId"
-        ));
-        /**
-         * Nên sử dụng ModelMapper để map thay vì BeanUtils vì BeanUtils sẽ gán các giá trị null cho các trường không có trong event.
-         * Vì vậy, các trường như createdAt, createdBy, ... sẽ bị gán null, dẫn đến lỗi khi lưu vào database.
-         */
         Promotion promotion = modelMapper.map(event, Promotion.class);
-        promotion.setId(event.getPromotionId());
+        promotion.setId(AppUtils.generateUUIDv7());
         promotionRepository.save(promotion);
     }
 
     @Override
     public ResponseData getPromotions(GetPromotionsRequest query) {
-        int page = Math.max(0, query.getPage());
-        int size = Math.max(1, query.getSize());
-
         List<Promotion> promotions = promotionRepository.findAllActivePromotions();
 
         return ResponseData.builder()
@@ -103,9 +93,9 @@ public class PromotionServiceImpl implements PromotionService {
     public void updatePromotion(PromotionDTO dto) {
         Promotion promotion = promotionRepository.findById(dto.getId()).orElse(null);
         if (Objects.isNull(promotion)) {
-            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Promotion.NOT_FOUND , dto.getId()));
+            throw new RuntimeException(messageCommon.getMessage(ErrorCode.Promotion.NOT_FOUND, dto.getId()));
         }
-        modelMapper.map(dto,promotion);
+        modelMapper.map(dto, promotion);
         promotionRepository.save(promotion);
     }
 }

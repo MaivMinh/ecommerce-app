@@ -101,12 +101,12 @@ eureka:
 grpc:
   client:
     support-service:
-      address: ${GRPC_SERVER_SUPPORT_SERVICE_ADDRESS:static://localhost:9096}
+      address: ${GRPC_CLIENT_SUPPORT_SERVICE_ADDRESS:${GRPC_SERVER_SUPPORT_SERVICE_ADDRESS:static://localhost:9096}}
       negotiation-type: plaintext
       enable-keep-alive: true
       keep-alive-without-calls: true
     product-service:
-      address: ${GRPC_SERVER_PRODUCT_SERVICE_ADDRESS:static://localhost:9091}
+      address: ${GRPC_CLIENT_PRODUCT_SERVICE_ADDRESS:${GRPC_SERVER_PRODUCT_SERVICE_ADDRESS:static://localhost:9091}}
       negotiation-type: plaintext
       enable-keep-alive: true
       keep-alive-without-calls: true

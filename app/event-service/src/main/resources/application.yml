@@ -97,7 +97,7 @@ grpc:
     port: 9097
   client:
     support-service:
-      address: ${GRPC_SERVER_SUPPORT_SERVICE_ADDRESS:static://localhost:9096}
+      address: ${GRPC_CLIENT_SUPPORT_SERVICE_ADDRESS:${GRPC_SERVER_SUPPORT_SERVICE_ADDRESS:static://localhost:9096}}
       negotiation-type: plaintext
       enable-keep-alive: true
       keep-alive-without-calls: true

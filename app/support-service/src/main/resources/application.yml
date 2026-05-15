@@ -22,7 +22,7 @@ spring:
       kafka:
         binder:
           brokers:
-            - ${KAFKA_BROKER:localhost:9092}
+            - ${KAFKA_BROKER:localhost:9094}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -109,7 +109,7 @@ grpc:
     port: 9096
   client:
     product-service:
-      address: ${GRPC_SERVER_PRODUCT_SERVICE_ADDRESS:static://localhost:9091}
+      address: ${GRPC_CLIENT_PRODUCT_SERVICE_ADDRESS:${GRPC_SERVER_PRODUCT_SERVICE_ADDRESS:${GRPC_SERVER_PRODUCT_SERVICE:static://localhost:9091}}}
       negotiation-type: plaintext
       enable-keep-alive: true
       keep-alive-without-calls: true

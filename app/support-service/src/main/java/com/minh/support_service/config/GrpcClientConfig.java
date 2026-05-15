@@ -1,4 +1,4 @@
-package com.minh.order_service.config;
+package com.minh.support_service.config;
 
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
@@ -14,20 +14,5 @@ public class GrpcClientConfig {
     @Bean
     public TimeLimiter productServiceTimeLimiter() {
         return timeLimiterRegistry.timeLimiter("product-service");
-    }
-
-    @Bean
-    public TimeLimiter supportServiceTimeLimiter() {
-        return timeLimiterRegistry.timeLimiter("support-service");
-    }
-
-    @Bean
-    public TimeLimiter paymentServiceTimeLimiter() {
-        return timeLimiterRegistry.timeLimiter("payment-service");
-    }
-
-    @Bean
-    public TimeLimiter eventServiceTimeLimiter() {
-        return timeLimiterRegistry.timeLimiter("event-service");
     }
 }

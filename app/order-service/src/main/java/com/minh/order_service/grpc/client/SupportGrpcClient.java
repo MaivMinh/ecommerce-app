@@ -6,6 +6,7 @@ import game_service.SupportServiceGrpc;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class SupportGrpcClient {
-    @Autowired
+    @GrpcClient("support-service")
     private SupportServiceGrpc.SupportServiceBlockingStub supportServiceBlockingStub;   /// Phải thực hiện ta Bean trong gRPC Config.
     @Autowired
     private TimeLimiter supportServiceTimeLimiter;

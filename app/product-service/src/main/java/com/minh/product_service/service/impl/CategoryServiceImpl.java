@@ -5,6 +5,7 @@ import com.minh.common.constants.ResponseMessages;
 import com.minh.common.exception.ResourceNotFoundException;
 import com.minh.common.message.MessageCommon;
 import com.minh.common.response.ResponseData;
+import com.minh.common.utils.AppUtils;
 import com.minh.product_service.dto.CategoryDTO;
 import com.minh.product_service.entity.Category;
 import com.minh.product_service.payload.request.FindAllCategoriesQuery;
@@ -122,6 +123,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public void createCategory(CategoryDTO dto) {
         Category category = modelMapper.map(dto, Category.class);
+        category.setId(AppUtils.generateUUIDv7());
         category.setSlug(generateSlug(dto.getName()));
         categoryRepository.save(category);
     }

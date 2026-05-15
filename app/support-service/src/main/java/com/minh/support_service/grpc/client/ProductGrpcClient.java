@@ -3,12 +3,13 @@ package com.minh.support_service.grpc.client;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
-import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import product_service.FindProductVariantsByIdsRequest;
 import product_service.FindProductVariantsByIdsResponse;
 import product_service.ProductServiceGrpc;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -27,7 +28,6 @@ public class ProductGrpcClient {
             fallbackMethod = "findProductVariantsByIds"
     )
     public FindProductVariantsByIdsResponse findProductVariantsByIds(FindProductVariantsByIdsRequest request) throws Exception {
-        TimeLimiter timeLimiter = TimeLimiter.ofDefaults("product-service");
-        return timeLimiter.executeFutureSupplier(() -> CompletableFuture.supplyAsync(() -> this.productServiceBlockingStub.findProductVariantsByIds(request)));
+        return this.productServiceBlockingStub.findProductVariantsByIds(request);
     }
 }

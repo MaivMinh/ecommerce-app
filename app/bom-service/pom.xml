@@ -30,7 +30,7 @@
         <spring-boot.version>3.4.1</spring-boot.version>
         <lombok.version>1.18.38</lombok.version>
         <springdoc-openapi.version>2.8.6</springdoc-openapi.version>
-        <grpc.version>1.60.1</grpc.version>
+        <grpc.version>1.63.0</grpc.version>
         <grpc.client.saga>2.5.0.RELEASE</grpc.client.saga>
 
     </properties>

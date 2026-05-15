@@ -2,6 +2,7 @@ package com.minh.order_service.grpc.client;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import payment_service.GetPaymentStatusRequest;
@@ -10,7 +11,7 @@ import payment_service.PaymentServiceGrpc;
 
 @Service
 public class PaymentGrpcClient {
-    @Autowired
+    @GrpcClient("payment-service")
     private PaymentServiceGrpc.PaymentServiceBlockingStub paymentServiceBlockingStub;
     @Autowired
     private TimeLimiter paymentServiceTimeLimiter;
@@ -20,7 +21,7 @@ public class PaymentGrpcClient {
         return GetPaymentStatusResponse.newBuilder().setStatus(500).setMessage(message).build();
     }
 
-    @CircuitBreaker(name = "paymentService", fallbackMethod = "getPaymentStatus")
+    @CircuitBreaker(name = "payment-service", fallbackMethod = "getPaymentStatus")
     public GetPaymentStatusResponse getPaymentStatus(GetPaymentStatusRequest paymentStatusRequest) throws Exception {
         return paymentServiceTimeLimiter.executeFutureSupplier(
                 () -> java.util.concurrent.CompletableFuture.supplyAsync(

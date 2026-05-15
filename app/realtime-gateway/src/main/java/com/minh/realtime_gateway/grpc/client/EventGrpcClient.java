@@ -7,6 +7,7 @@ import event_service.EventServiceGrpc;
 import event_service.MilestoneRequest;
 import event_service.MilestoneResponse;
 import io.grpc.stub.StreamObserver;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,8 +16,10 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class EventGrpcClient {
-    private final EventServiceGrpc.EventServiceStub eventServiceStub;
     private final SessionRegistry sessionRegistry;
+
+    @GrpcClient("event-service")
+    private EventServiceGrpc.EventServiceStub eventServiceStub;
 
     public void updateMilestone(MilestoneRequest request) {
         eventServiceStub.streamMilestone(request, new StreamObserver<>() {
