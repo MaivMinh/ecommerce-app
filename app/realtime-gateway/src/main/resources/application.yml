@@ -35,7 +35,9 @@ keycloak:
   realm: e-commerce
   credentials:
     client-id: ecommerce-backend
-    client-secret: ${KAFKA_CREDENTIALS_CLIENT_SECRET:8wCNwAKqyK74RWKPgf0lNm3DX50HfogV}
+    client-secret: ${KAFKA_CREDENTIALS_CLIENT_SECRET:rDBwKuMWu9ZdKwrDujdzv26s1flOdEpI}
+  server-url: ${KEYCLOAK_SERVER_URL:http://localhost:6060}
+
 
 kafka:
   consumer:

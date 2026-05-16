@@ -26,7 +26,7 @@ public class KeycloakIntrospectiveServiceImpl implements KeycloakIntrospectionSe
     @Value("${keycloak.credentials.client-id:ecommerce-backend}")
     private String clientId;
 
-    @Value("${keycloak.credentials.client-secret:8wCNwAKqyK74RWKPgf0lNm3DX50HfogV}")
+    @Value("${keycloak.credentials.client-secret:rDBwKuMWu9ZdKwrDujdzv26s1flOdEpI}")
     private String clientSecret;
 
     public Boolean introspect(String token) {

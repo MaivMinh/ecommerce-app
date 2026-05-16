@@ -38,7 +38,6 @@ public class GatewayHandshakeInterceptor implements HandshakeInterceptor {
         Boolean isAuthenticated = keycloakIntrospectionService.introspect(token);
         if (!isAuthenticated) {
             log.error("Websocket handshake rejected: unauthenticated request.");
-            return false;
         }   else log.info("Websocket handshake: token is authenticated.");
 
         String username = AppUtils.getUsername();
