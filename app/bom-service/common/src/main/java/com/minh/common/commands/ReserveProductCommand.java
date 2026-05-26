@@ -18,4 +18,5 @@ public class ReserveProductCommand extends SagaCommand {
     private String currency;
     private String username;
     private String productId;
+    private String shippingAddressId;
 }

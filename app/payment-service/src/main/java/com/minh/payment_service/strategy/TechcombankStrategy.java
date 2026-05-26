@@ -48,6 +48,7 @@ public class TechcombankStrategy extends AbstractPaymentStrategy {
             payment.setOrderId(command.getOrderId());
             payment.setTotal(command.getTotal());
             payment.setPaymentMethodId(method.getId());
+            payment.setPaymentMethodCode(command.getPaymentMethod());
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setCurrency(command.getCurrency());
             payment.setTransactionId(AppUtils.generateUUIDv7());
@@ -56,6 +57,7 @@ public class TechcombankStrategy extends AbstractPaymentStrategy {
             return PaymentResponse.builder()
                     .paymentId(paymentId)
                     .status(HttpStatus.OK.value())
+                    .paymentStatus(PaymentStatus.COMPLETED)
                     .message("Payment processed successfully via Techcombank.")
                     .build();
         } catch (Exception e) {

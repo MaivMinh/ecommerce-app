@@ -15,4 +15,5 @@ public class ProductReservedEvent extends SagaEvent {
     private Double total;
     private String currency;
     private String username;
+    private String shippingAddressId;
 }

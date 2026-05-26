@@ -25,19 +25,6 @@ public class AppUtils {
         return null;
     }
 
-    public static AuthenticatedDetails getUserDetails() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (Objects.nonNull(authentication) && authentication.isAuthenticated()) {
-            Object details = authentication.getDetails();
-            if (details instanceof AuthenticatedDetails) {
-                return (AuthenticatedDetails) details;
-            }
-        }
-
-        return null;
-    }
-
     public static Pageable toPageable(SearchDTO searchDTO) {
         if (StringUtils.hasText(searchDTO.getSortBy())) {
             int page = Math.max(0, searchDTO.getPage() - 1);

@@ -15,6 +15,7 @@ public class OrderCreatedEvent extends SagaEvent {
     private String currency;
     private Double total;
     private String paymentMethod;
+    private String shippingAddressId;
     private List<OrderItemCreatedEvent> orderItemDtos;
     private String productId;
 }

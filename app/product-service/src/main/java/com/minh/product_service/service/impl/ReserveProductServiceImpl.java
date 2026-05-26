@@ -67,6 +67,7 @@ public class ReserveProductServiceImpl implements ReserveProductService {
                 .total(command.getTotal())
                 .currency(command.getCurrency())
                 .username(command.getUsername())
+                .shippingAddressId(command.getShippingAddressId())
                 .build();
         event.setSagaId(command.getSagaId());
         event.setTimestamp(command.getTimestamp());

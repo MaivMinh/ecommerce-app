@@ -28,6 +28,7 @@ public class KafkaErrorHandler {
         return new DefaultErrorHandler(
                 (record, exception) -> {
                     Object message = record.value();
+                    exception.printStackTrace();
                     if (message instanceof ProcessPaymentCommand command) {
                         PaymentFailedEvent event = PaymentFailedEvent.builder()
                                 .orderId(command.getOrderId())

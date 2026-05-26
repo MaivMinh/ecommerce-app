@@ -48,6 +48,7 @@ public class MomoStrategy extends AbstractPaymentStrategy {
             payment.setOrderId(command.getOrderId());
             payment.setTotal(command.getTotal());
             payment.setPaymentMethodId(method.getId());
+            payment.setPaymentMethodCode(command.getPaymentMethod());
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setCurrency(command.getCurrency());
             payment.setTransactionId(AppUtils.generateUUIDv7());
@@ -56,6 +57,7 @@ public class MomoStrategy extends AbstractPaymentStrategy {
             return PaymentResponse.builder()
                     .paymentId(command.getPaymentId())
                     .status(HttpStatus.OK.value())
+                    .paymentStatus(PaymentStatus.COMPLETED)
                     .message("Payment processed successfully via Momo.")
                     .build();
         } catch (Exception e) {

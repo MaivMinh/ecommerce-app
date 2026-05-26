@@ -15,4 +15,5 @@ public class ProcessPaymentCommand extends SagaCommand {
     private String paymentMethod;
     private String username;
     private String productId;
+    private String shippingAddressId;
 }

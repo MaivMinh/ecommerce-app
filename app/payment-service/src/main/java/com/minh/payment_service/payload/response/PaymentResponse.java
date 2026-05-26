@@ -1,5 +1,6 @@
 package com.minh.payment_service.payload.response;
 
+import com.minh.payment_service.enums.PaymentStatus;
 import lombok.*;
 
 @Getter
@@ -12,4 +13,7 @@ public class PaymentResponse {
     private String transactionId;
     private Integer status;
     private String message;
+    private PaymentStatus paymentStatus;
+    private String redirectUrl;
+    private String providerOrderId;
 }

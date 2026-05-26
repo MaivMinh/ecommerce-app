@@ -321,6 +321,7 @@ public class OrderServiceImpl implements OrderService {
         OrderCreatedEvent event = OrderCreatedEvent.builder()
                 .orderId(orderId)
                 .currency(request.getCurrency())
+                .shippingAddressId(request.getShippingAddressId())
                 .orderItemDtos(request.getOrderItemDtos().stream()
                         .map(item -> OrderItemCreatedEvent.builder()
                                 .id(item.getId())
@@ -335,7 +336,7 @@ public class OrderServiceImpl implements OrderService {
         event.setMessageId(AppUtils.generateUUIDv7());
         orchestrator.startSaga(event);
 
-        return ResponseData.builder().status(HttpStatus.OK.value()).message(ResponseMessages.SUCCESS).data(null).build();
+        return ResponseData.builder().status(HttpStatus.OK.value()).message(ResponseMessages.SUCCESS).data(Map.of("orderId", orderId)).build();
     }
 
     @Override

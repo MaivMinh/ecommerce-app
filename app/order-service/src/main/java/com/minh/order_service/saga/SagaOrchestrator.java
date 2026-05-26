@@ -20,8 +20,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -63,6 +61,7 @@ public class SagaOrchestrator {
                 .currency(event.getCurrency())
                 .username(event.getUsername())
                 .productId(event.getProductId())
+                .shippingAddressId(event.getShippingAddressId())
                 .reserveProductItems(event.getOrderItemDtos().stream().map(
                         item -> ReservedProductItem.builder()
                                 .productVariantId(item.getProductVariantId())
@@ -100,6 +99,7 @@ public class SagaOrchestrator {
                 .total(event.getTotal())
                 .currency(event.getCurrency())
                 .username(state.getUsername())
+                .shippingAddressId(event.getShippingAddressId())
                 .build();
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
@@ -181,7 +181,7 @@ public class SagaOrchestrator {
         command.setSagaId(event.getSagaId());
         command.setTimestamp(event.getTimestamp());
         outboxMessageService.store(KafkaTopics.PRODUCT_RELEASE, command, ReleaseProductCommand.class.getName());
-        log.info("Saga [{}] compensation completed for order [{}].", event.getSagaId(), event.getOrderId());
+        log.info("Saga [{}] processing compensation for order [{}]. Sent ProductReleaseCommand to Kafka.", event.getSagaId(), event.getOrderId());
     }
 
     @KafkaListener(

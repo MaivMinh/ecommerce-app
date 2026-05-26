@@ -3,6 +3,12 @@ server:
 grpc:
   server:
     port: 9095
+  client:
+    support-service:
+      address: ${GRPC_CLIENT_SUPPORT_SERVICE_ADDRESS:${GRPC_SERVER_SUPPORT_SERVICE:static://localhost:9096}}
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      keep-alive-without-calls: true
 
 spring:
   application:
@@ -93,3 +99,34 @@ eureka:
 logging:
   level:
     net.devh.boot.grpc.server: DEBUG
+
+resilience4j:
+  timelimiter:
+    instances:
+      support-service:
+        timeout-duration: 5s
+        cancel-running-future: true
+  circuitbreaker:
+    instances:
+      support-service:
+        register-health-indicator: true
+        sliding-window-size: 30
+        minimum-number-of-calls: 30
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20000
+        permitted-number-of-calls-in-half-open-state: 15
+        sliding-window-type: COUNT_BASED
+
+paypal:
+  base-url: ${PAYPAL_BASE_URL:https://api-m.sandbox.paypal.com}
+  client-id: ${PAYPAL_CLIENT_ID:AcT4YNcb8TKxujcMFSXjxf5yLs4DlG4NIsXBTRQNXOZR229fEuyYrWHLMWLh48n8tqtNH5vYSybVqTR2}
+  client-secret: ${PAYPAL_CLIENT_SECRET:EO62CNg7sg3egDMcTJ3SsnODv9zzpVxi2hQTmRrertovRX-qtj9MO553_cekFriMY7Zf1dKA3uVCFCyZ}
+  brand-name: ${PAYPAL_BRAND_NAME:e-commerce}
+  locale: ${PAYPAL_LOCALE:en-US}
+  return-url: ${PAYPAL_RETURN_URL:http://localhost:8085/api/payments/paypal/callback/success}
+  cancel-url: ${PAYPAL_CANCEL_URL:http://localhost:8085/api/payments/paypal/callback/cancel}
+  frontend-success-url: ${PAYPAL_FRONTEND_SUCCESS_URL:http://localhost:5173/orders}
+  frontend-cancel-url: ${PAYPAL_FRONTEND_CANCEL_URL:http://localhost:5173/orders}
+  frontend-failure-url: ${PAYPAL_FRONTEND_FAILURE_URL:http://localhost:5173/orders}
+  country-code: ${PAYPAL_COUNTRY_CODE:VN}
+  sse-timeout-ms: ${PAYPAL_SSE_TIMEOUT_MS:1800000}

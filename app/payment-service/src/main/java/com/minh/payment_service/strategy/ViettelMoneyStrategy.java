@@ -49,6 +49,7 @@ public class ViettelMoneyStrategy extends AbstractPaymentStrategy {
             payment.setOrderId(command.getOrderId());
             payment.setTotal(command.getTotal());
             payment.setPaymentMethodId(method.getId());
+            payment.setPaymentMethodCode(command.getPaymentMethod());
             payment.setStatus(PaymentStatus.COMPLETED);
             payment.setCurrency(command.getCurrency());
             payment.setTransactionId(AppUtils.generateUUIDv7());
@@ -57,6 +58,7 @@ public class ViettelMoneyStrategy extends AbstractPaymentStrategy {
             return PaymentResponse.builder()
                     .paymentId(paymentId)
                     .status(HttpStatus.OK.value())
+                    .paymentStatus(PaymentStatus.COMPLETED)
                     .message("Payment processed successfully via Viettel Money.")
                     .build();
         } catch (Exception e) {
